@@ -1,21 +1,69 @@
 body {
     font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    transition: background-color 0.5s;
     margin: 0;
     padding: 0;
 }
 
-header {
-    background-color: olive;
-    color: white;
-    padding: 10px;
+.container {
     text-align: center;
+    margin-top: 50px;
 }
 
-main {
-    padding: 20px;
+#chart-container {
+    margin: 20px auto;
+    max-width: 500px; /* Limit the width of the chart container */
 }
 
+button {
+    margin: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff; /* Bootstrap primary color */
+    color: white;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker shade for hover effect */
+}
+
+input[type="number"],
+input[type="text"],
+input[type="color"],
 select {
     padding: 10px;
-    font-size: 16px;
+    margin: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px; /* Set a consistent width for inputs */
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus,
+input[type="color"]:focus,
+select:focus {
+    border-color: #007bff; /* Highlight border on focus */
+    outline: none; /* Remove default outline */
+}
+
+.day-theme {
+    background-color: #f0f0f0;
+    color: #000;
+}
+
+.night-theme {
+    background-color: #333;
+    color: #fff;
+}
+
+.night-theme button {
+    background-color: #555; /* Button color for night theme */
+}
+
+.night-theme button:hover {
+    background-color: #777; /* Darker shade for hover effect in night theme */
 }
