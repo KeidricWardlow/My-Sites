@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Time Converter</title>
+        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400&display=swap" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0
+            }
+
+            html,
+            body {
+                min-height: 100vh;
+                font-family: 'Quicksand', sans-serif;
+                background: linear-gradient(to bottom, gold, red, grey);
+                color: white;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .container {
+                background: rgba(0, 0, 0, 0.7);
+                padding: 20px;
+                border-radius: 10px;
+                width: 95%;
+                max-width: 1000px;
+                text-align: center;
+            }
+
+            .input-container {
+                display: flex;
+                justify-content: space-between;
+                margin: 20px 0;
+                flex-wrap: wrap;
+            }
+
+            .input-group {
+                flex: 1;
+                margin: 10px;
+                min-width: 140px;
+            }
+
+            textarea {
+                width: 100%;
+                padding: 10px;
+                margin-top: 10px;
+                border-radius: 5px;
+                resize: none;
+                height: 120px;
+            }
+
+            button {
+                padding: 10px 20px;
+                background-color: yellow;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin: 10px 5px 0 5px;
+                font-family: 'Quicksand', Times, serif;
+            }
+
+            button:hover {
+                background-color: red
+            }
+
+            .result,
+            .history {
+                margin-top: 20px;
+                font-size: .75em;
+                white-space: pre-line;
+                text-align: left;
+            }
+
+            .history {
+                border-top: 1px solid white;
+                margin-top: 30px;
+                padding-top: 10px;
+            }
+
+            .history-entry {
+                margin-bottom: 10px;
+                padding: 8px;
+                border-radius: 5px;
+                cursor: pointer;
+                background: rgba(255, 255, 255, 0.05);
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .history-entry:hover {
+                background: rgba(255, 255, 255, 0.15)
+            }
+
+            .delete-btn {
+                background: crimson;
+                border: none;
+                color: white;
+                font-size: .8em;
+                padding: 5px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+            .delete-btn:hover {
+                background: darkred
+            }
+
+            .entry-text {
+                flex: 1;
+                white-space: pre-line
+            }
+
+            canvas {
+                margin-top: 20px;
+                background: black;
+                border-radius: 10px;
+                padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="input-container">
+                <div class="input-group">
+                    <label for="weeksInput">Weeks:</label>
+                    <textarea id="weeksInput" placeholder="Enter weeks per line (e.g., '2')"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="daysInput">Days:</label>
+                    <textarea id="daysInput" placeholder="Enter days per line (e.g., '7')"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="hoursInput">Hours:</label>
+                    <textarea id="hoursInput" placeholder="Enter hours per line (e.g., '1')"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="minutesInput">Minutes:</label>
+                    <textarea id="minutesInput" placeholder="Enter minutes per line (e.g., '15')"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="secondsInput">Seconds:</label>
+                    <textarea id="secondsInput" placeholder="Enter seconds per line (e.g., '60')"></textarea>
+                </div>
+            </div>
+            <button id="convertBtn">Convert</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+            <button id="exportBtn">Export Result to XLSX</button>
+            <button id="exportHistoryBtn">Export All History to XLSX</button>
+            <button id="clearBtn">Clear Inputs</button>
+            <button id="clearHistoryBtn">Clear All History</button>
+            <div id="result" class="result"></div>
+            <canvas id="timeChart"></canvas>
+            <div id="history" class="history"></div>
+        </div>
+        <script>
+            let lastResult = "",
+                chartInstance = null;
+            let undoStack = [],
+                redoStack = [];
+
+            function snapshot() {
+                const i = getInputs();
+                const history = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                undoStack.push({
+                    inputs: {
+                        ...i
+                    },
+                    result: document.getElementById('result').innerText,
+                    history
+                });
+                redoStack = [];
+            }
+
+            function restoreState(state) {
+                restoreInputs(state.inputs);
+                document.getElementById('result').innerText = state.result;
+                localStorage.setItem("timeHistory", JSON.stringify(state.history));
+                renderHistory();
+                if (state.result) drawChart(parseResultToValues(state.result));
+                else if (chartInstance) chartInstance.destroy();
+            }
+
+            function parseResultToValues(result) {
+                return result.split("\n").map(line => parseInt(line) || 0);
+            }
+
+            function saveToHistory(result, inputs) {
+                let history = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                history.push({
+                    result,
+                    inputs,
+                    timestamp: new Date().toLocaleString()
+                });
+                localStorage.setItem("timeHistory", JSON.stringify(history));
+                renderHistory();
+            }
+
+            function deleteHistoryEntry(index) {
+                let history = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                history.splice(index, 1);
+                localStorage.setItem("timeHistory", JSON.stringify(history));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                let history = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                const div = document.getElementById("history");
+                div.innerHTML = "";
+                if (!history.length) {
+                    div.innerText = "No past conversions.";
+                    return;
+                }
+                const title = document.createElement("div");
+                title.innerText = "Conversion History:";
+                title.style.marginBottom = "10px";
+                div.appendChild(title);
+                history.forEach((entry, idx) => {
+                    const d = document.createElement("div");
+                    d.classList.add("history-entry");
+                    const t = document.createElement("div");
+                    t.classList.add("entry-text");
+                    t.innerText = `${idx+1}. [${entry.timestamp}]\n${entry.result}`;
+                    t.addEventListener("click", () => {
+                        snapshot();
+                        document.getElementById("result").innerText = entry.result;
+                        drawChart(parseResultToValues(entry.result));
+                        restoreInputs(entry.inputs);
+                    });
+                    const b = document.createElement("button");
+                    b.classList.add("delete-btn");
+                    b.innerText = "❌";
+                    b.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        deleteHistoryEntry(idx);
+                    });
+                    d.appendChild(t);
+                    d.appendChild(b);
+                    div.appendChild(d);
+                });
+            }
+
+            function drawChart(values) {
+                const ctx = document.getElementById("timeChart").getContext("2d");
+                if (chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: ["Centuries", "Decades", "Years", "Months", "Weeks", "Days", "Hours", "Minutes", "Seconds"],
+                        datasets: [{
+                            label: "Time Breakdown",
+                            data: values,
+                            backgroundColor: "rgba(255,215,0,0.8)",
+                            borderColor: "white",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: "white"
+                                }
+                            },
+                            y: {
+                                ticks: {
+                                    color: "white"
+                                },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            function getInputs() {
+                return {
+                    weeks: document.getElementById('weeksInput').value.trim(),
+                    days: document.getElementById('daysInput').value.trim(),
+                    hours: document.getElementById('hoursInput').value.trim(),
+                    minutes: document.getElementById('minutesInput').value.trim(),
+                    seconds: document.getElementById('secondsInput').value.trim()
+                };
+            }
+
+            function restoreInputs(i) {
+                document.getElementById('weeksInput').value = i.weeks || "";
+                document.getElementById('daysInput').value = i.days || "";
+                document.getElementById('hoursInput').value = i.hours || "";
+                document.getElementById('minutesInput').value = i.minutes || "";
+                document.getElementById('secondsInput').value = i.seconds || "";
+            }
+            document.getElementById('convertBtn').addEventListener('click', () => {
+                snapshot();
+                const i = getInputs();
+                const parse = (txt, m) => txt.split('\n').reduce((a, l) => a + (parseInt(l) || 0) * m, 0);
+                let totalMinutes = parse(i.weeks, 10080) + parse(i.days, 1440) + parse(i.hours, 60) + parse(i.minutes, 1);
+                let totalSeconds = parse(i.seconds, 1);
+                totalMinutes += Math.floor(totalSeconds / 60);
+                const remSec = totalSeconds % 60;
+                const totalDays = Math.floor(totalMinutes / (1440));
+                let years = Math.floor(totalDays / 365);
+                const remDaysY = totalDays % 365;
+                const months = Math.floor(remDaysY / 30);
+                const remDaysM = remDaysY % 30;
+                const remWeeks = Math.floor(remDaysM / 7);
+                const remDays = remDaysM % 7;
+                const totalHours = Math.floor((totalMinutes % (1440)) / 60);
+                const remMin = totalMinutes % 60;
+                let centuries = 0,
+                    decades = 0;
+                if (years >= 100) {
+                    centuries = Math.floor(years / 100);
+                    years %= 100;
+                }
+                if (years >= 10) {
+                    decades = Math.floor(years / 10);
+                    years %= 10;
+                }
+                const resultText = [`${centuries} centuries`, `${decades} decades`, `${years} years`, `${months} months`, `${remWeeks} weeks`, `${remDays} days`, `${totalHours} hours`, `${remMin} minutes`, `${remSec} seconds`].join('\n');
+                lastResult = resultText;
+                document.getElementById('result').innerText = resultText;
+                saveToHistory(resultText, i);
+                drawChart(parseResultToValues(resultText));
+            });
+            document.getElementById('undoBtn').addEventListener('click', () => {
+                if (!undoStack.length) return;
+                const current = {
+                    inputs: getInputs(),
+                    result: document.getElementById('result').innerText,
+                    history: JSON.parse(localStorage.getItem("timeHistory")) || []
+                };
+                redoStack.push(current);
+                const prev = undoStack.pop();
+                restoreState(prev);
+            });
+            document.getElementById('redoBtn').addEventListener('click', () => {
+                if (!redoStack.length) return;
+                const current = {
+                    inputs: getInputs(),
+                    result: document.getElementById('result').innerText,
+                    history: JSON.parse(localStorage.getItem("timeHistory")) || []
+                };
+                undoStack.push(current);
+                const next = redoStack.pop();
+                restoreState(next);
+            });
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                let history = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                if (!history.length) {
+                    alert("No history to export.");
+                    return;
+                }
+                const wb = XLSX.utils.book_new();
+                history.forEach((entry, idx) => {
+                    const data = [];
+                    data.push(["Timestamp", entry.timestamp]);
+                    data.push([]);
+                    data.push(["Inputs"]);
+                    Object.entries(entry.inputs).forEach(([k, v]) => {
+                        data.push([k.charAt(0).toUpperCase() + k.slice(1), v || ""]);
+                    });
+                    data.push([]);
+                    data.push(["Results"]);
+                    entry.result.split("\n").forEach(line => {
+                        const [value, ...unitParts] = line.split(" ");
+                        data.push([unitParts.join(" "), value]);
+                    });
+                    const ws = XLSX.utils.aoa_to_sheet(data);
+                    XLSX.utils.book_append_sheet(wb, ws, `Entry ${idx+1}`.substring(0, 31));
+                });
+                XLSX.writeFile(wb, "time_conversion_history.xlsx");
+            });
+            document.getElementById('exportHistoryBtn').addEventListener('click', () => document.getElementById('exportBtn').click());
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                snapshot();
+                ['weeks', 'days', 'hours', 'minutes', 'seconds'].forEach(id => document.getElementById(id + 'Input').value = "");
+                document.getElementById('result').innerText = "";
+                if (chartInstance) chartInstance.destroy();
+                lastResult = "";
+            });
+            document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+                const oldHistory = JSON.parse(localStorage.getItem("timeHistory")) || [];
+                if (!oldHistory.length) return;
+                snapshot();
+                localStorage.removeItem("timeHistory");
+                renderHistory();
+            });
+            renderHistory();
+        </script>
+    </body>
+</html>
