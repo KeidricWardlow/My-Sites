@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Calculator</title>
+<style>
+  body {
+    font-family: Georgia, serif;
+    background: linear-gradient(135deg, navy, white, lime);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .container {
+    background: rgba(255,255,255,0.8);
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    padding: 25px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 90%;
+    max-width: 900px;
+  }
+
+  h3 {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  input, button {
+    font-family: Georgia, serif;
+    margin: 4px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .section {
+    text-align: center;
+    width: 100%;
+  }
+
+  .matrix-area {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+  }
+
+  .matrix-container {
+    background: rgba(255,255,255,0.7);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+    flex: 1 1 280px;
+    max-width: 350px;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0 auto;
+  }
+
+  td {
+    border: 1px solid black;
+    padding: 3px;
+  }
+
+  input.matrix-cell {
+    width: 50px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  button {
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid navy;
+    background-color: white;
+    transition: 0.3s;
+  }
+
+  button:hover {
+    background-color: indigo;
+    color: white;
+  }
+
+  #filename {
+    width: 200px;
+    border-radius: 6px;
+    border: 1px solid navy;
+  }
+
+  @media (max-width: 600px) {
+    input.matrix-cell { width: 40px; }
+    table { transform: scale(0.95); }
+    .container { padding: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="matrix-area">
+    <div class="matrix-container">
+      <h3>Matrix A</h3>
+      Rows: <input type="number" id="rowsA" min="1" value="2">
+      Cols: <input type="number" id="colsA" min="1" value="2">
+      <div id="matrixA"></div>
+    </div>
+
+    <div class="matrix-container">
+      <h3>Matrix B</h3>
+      Rows: <input type="number" id="rowsB" min="1" value="2">
+      Cols: <input type="number" id="colsB" min="1" value="2">
+      <div id="matrixB"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button id="updateAll">Update Matrices</button>
+  </div>
+
+  <div class="section">
+    <button id="add">A + B</button>
+    <button id="subtract">A - B</button>
+    <button id="multiply">A × B</button>
+  </div>
+
+  <div class="section">
+    <h3>Result</h3>
+    <div id="matrixResult"></div>
+  </div>
+
+  <div class="section">
+    <input type="text" id="filename" placeholder="Enter filename">
+    <br>
+    <button id="save">Save</button>
+    <button id="load">Load</button>
+    <button id="export">Export XLSX</button>
+    <button id="clear">Clear</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  const aContainer = document.getElementById('matrixA');
+  const bContainer = document.getElementById('matrixB');
+  const rContainer = document.getElementById('matrixResult');
+  const rowsAInput = document.getElementById('rowsA');
+  const colsAInput = document.getElementById('colsA');
+  const rowsBInput = document.getElementById('rowsB');
+  const colsBInput = document.getElementById('colsB');
+  const fileInput = document.getElementById('filename');
+
+  // File list area
+  const fileListDiv = document.createElement('div');
+  fileListDiv.id = 'fileList';
+  fileListDiv.style.marginTop = '10px';
+  document.querySelector('.section:last-of-type').appendChild(fileListDiv);
+
+  function updateFileList() {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('matrixData_'));
+    fileListDiv.innerHTML = '<h4>Saved Files</h4>';
+    if (!keys.length) {
+      fileListDiv.innerHTML += '<p style="font-style:italic;">No saved files yet.</p>';
+      return;
+    }
+    const list = document.createElement('ul');
+    list.style.listStyle = 'none';
+    list.style.padding = '0';
+    keys.forEach(k => {
+      const data = JSON.parse(localStorage.getItem(k));
+      const li = document.createElement('li');
+      li.style.margin = '4px 0';
+      li.innerHTML = `<strong>${k.replace('matrixData_', '')}</strong> 
+                      <span style="color:gray;font-size:13px;">(${data.timestamp || 'Unknown time'})</span>`;
+      li.style.cursor = 'pointer';
+      li.onclick = () => {
+        fileInput.value = k.replace('matrixData_', '');
+        document.getElementById('load').click();
+      };
+      list.appendChild(li);
+    });
+    fileListDiv.appendChild(list);
+  }
+
+  function createMatrix(container, rows, cols, prevValues = []) {
+    container.innerHTML = '';
+    const table = document.createElement('table');
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'matrix-cell';
+        input.placeholder = '-';
+        input.value = (prevValues[r] && prevValues[r][c] !== undefined) ? prevValues[r][c] : '';
+        td.appendChild(input);
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    container.appendChild(table);
+  }
+
+  function getMatrix(container) {
+    const values = [];
+    container.querySelectorAll('tr').forEach(tr => {
+      const row = [];
+      tr.querySelectorAll('input').forEach(inp => row.push(parseFloat(inp.value) || 0));
+      values.push(row);
+    });
+    return values;
+  }
+
+  function displayResult(matrix) {
+    if (!matrix || !matrix.length) return;
+    createMatrix(rContainer, matrix.length, matrix[0].length);
+    const inputs = rContainer.querySelectorAll('input.matrix-cell');
+    matrix.flat().forEach((val, i) => inputs[i].value = val);
+  }
+
+  function addMatrices(a, b) { return a.map((row, i) => row.map((v, j) => v + b[i][j])); }
+  function subtractMatrices(a, b) { return a.map((row, i) => row.map((v, j) => v - b[i][j])); }
+  function multiplyMatrices(a, b) {
+    const aRows = a.length, aCols = a[0].length, bCols = b[0].length;
+    const result = Array.from({ length: aRows }, () => Array(bCols).fill(0));
+    for (let i = 0; i < aRows; i++)
+      for (let j = 0; j < bCols; j++)
+        for (let k = 0; k < aCols; k++)
+          result[i][j] += a[i][k] * b[k][j];
+    return result;
+  }
+
+  document.getElementById('updateAll').addEventListener('click', () => {
+    const prevA = getMatrix(aContainer);
+    const prevB = getMatrix(bContainer);
+    createMatrix(aContainer, parseInt(rowsAInput.value), parseInt(colsAInput.value), prevA);
+    createMatrix(bContainer, parseInt(rowsBInput.value), parseInt(colsBInput.value), prevB);
+  });
+
+  document.getElementById('add').addEventListener('click', () => {
+    const a = getMatrix(aContainer);
+    const b = getMatrix(bContainer);
+    if (a.length !== b.length || a[0].length !== b[0].length)
+      return alert('Matrices must have the same dimensions for addition.');
+    displayResult(addMatrices(a, b));
+  });
+
+  document.getElementById('subtract').addEventListener('click', () => {
+    const a = getMatrix(aContainer);
+    const b = getMatrix(bContainer);
+    if (a.length !== b.length || a[0].length !== b[0].length)
+      return alert('Matrices must have the same dimensions for subtraction.');
+    displayResult(subtractMatrices(a, b));
+  });
+
+  document.getElementById('multiply').addEventListener('click', () => {
+    const a = getMatrix(aContainer);
+    const b = getMatrix(bContainer);
+    if (a[0].length !== b.length)
+      return alert('Columns of A must equal rows of B.');
+    displayResult(multiplyMatrices(a, b));
+  });
+
+  document.getElementById('save').addEventListener('click', () => {
+    const filename = fileInput.value.trim();
+    if (!filename) return alert('Enter a filename first.');
+    const now = new Date();
+    const timestamp = now.toLocaleString();
+    const data = {
+      A: getMatrix(aContainer),
+      B: getMatrix(bContainer),
+      dims: {
+        rowsA: rowsAInput.value,
+        colsA: colsAInput.value,
+        rowsB: rowsBInput.value,
+        colsB: colsBInput.value
+      },
+      timestamp
+    };
+    localStorage.setItem(`matrixData_${filename}`, JSON.stringify(data));
+    alert(`Matrices saved as "${filename}" at ${timestamp}.`);
+    updateFileList();
+  });
+
+  document.getElementById('load').addEventListener('click', () => {
+    const filename = fileInput.value.trim();
+    if (!filename) return alert('Enter the filename to load.');
+    const data = JSON.parse(localStorage.getItem(`matrixData_${filename}`) || '{}');
+    if (!data.A || !data.B) return alert(`No data found for "${filename}".`);
+    rowsAInput.value = data.dims?.rowsA || 2;
+    colsAInput.value = data.dims?.colsA || 2;
+    rowsBInput.value = data.dims?.rowsB || 2;
+    colsBInput.value = data.dims?.colsB || 2;
+    createMatrix(aContainer, data.A.length, data.A[0].length, data.A);
+    createMatrix(bContainer, data.B.length, data.B[0].length, data.B);
+    alert(`Matrices loaded from "${filename}".`);
+  });
+
+  document.getElementById('export').addEventListener('click', () => {
+    const filename = fileInput.value.trim() || 'matrices';
+    const a = getMatrix(aContainer);
+    const b = getMatrix(bContainer);
+    const result = getMatrix(rContainer);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a), 'Matrix A');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(b), 'Matrix B');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(result), 'Result');
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  });
+
+  document.getElementById('clear').addEventListener('click', () => {
+    createMatrix(aContainer, parseInt(rowsAInput.value), parseInt(colsAInput.value));
+    createMatrix(bContainer, parseInt(rowsBInput.value), parseInt(colsBInput.value));
+    rContainer.innerHTML = '';
+  });
+
+  createMatrix(aContainer, 2, 2);
+  createMatrix(bContainer, 2, 2);
+  updateFileList();
+</script>
