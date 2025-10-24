@@ -154,7 +154,7 @@
 
   function pushState() {
     undoStack.push(JSON.stringify(getState()));
-    redoStack = []; // clear redo when new change occurs
+    redoStack = [];
     saveState();
   }
 
