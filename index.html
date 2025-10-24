@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Operands</title>
+        <style>
+            body {
+                font-family: Georgia, serif;
+                background: linear-gradient(to bottom right, lightyellow, lightblue, darkred);
+                background-attachment: fixed;
+                min-height: 100vh;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                overflow: hidden;
+            }
+
+            .wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+                width: 100%;
+                max-width: 650px;
+                padding: 20px;
+            }
+
+            .container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+            }
+
+            input[type="number"],
+            select,
+            input[type="text"] {
+                font-size: 16px;
+                padding: 5px;
+                width: 100px;
+                text-align: center;
+            }
+
+            input[type="text"].filename {
+                width: 300px;
+                text-align: left;
+            }
+
+            .output-box {
+                width: 100%;
+                height: 250px;
+                background-color: navy;
+                color: lightyellow;
+                font-family: "Courier New", Courier, monospace;
+                font-size: 14px;
+                display: flex;
+                flex-direction: column;
+                border: 5px solid lightyellow;
+            }
+
+            .header-row {
+                background: darkblue;
+                flex-shrink: 0;
+                padding: 4px 6px;
+                font-weight: bold;
+                display: flex;
+                gap: 30px;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+            .content {
+                flex: 1;
+                overflow-y: auto;
+                white-space: pre;
+                padding: 4px 6px;
+            }
+
+            button {
+                padding: 8px 12px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+            <div class="container">
+                <input type="number" id="base" placeholder="Base" />
+                <select id="operation">
+                    <option value="*">*</option>
+                    <option value="/">/</option>
+                    <option value="+">+</option>
+                    <option value="-">-</option>
+                </select>
+                <input type="number" id="operand" placeholder="Operand" />
+            </div>
+            <input type="number" id="repeat" placeholder="Repeat Count" />
+            <div class="output-box">
+                <div class="header-row">Step&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result</div>
+                <div id="content" class="content"></div>
+            </div>
+            <input type="text" id="filename" class="filename" placeholder="Filename (default: timestamped CSV)" />
+            <button id="exportBtn" onclick="exportCSV()" disabled>Export CSV</button>
+        </div>
+        <script>
+            const baseInput = document.getElementById('base');
+            const operationSelect = document.getElementById('operation');
+            const operandInput = document.getElementById('operand');
+            const repeatInput = document.getElementById('repeat');
+            const content = document.getElementById('content');
+            const exportBtn = document.getElementById('exportBtn');
+            const filenameInput = document.getElementById('filename');
+
+            function pad(str, len) {
+                str = String(str);
+                while (str.length < len) str += " ";
+                return str;
+            }
+
+            function calculate() {
+                const base = parseFloat(baseInput.value);
+                const operand = parseFloat(operandInput.value);
+                const repeat = parseInt(repeatInput.value);
+                const op = operationSelect.value;
+                if (isNaN(base) || isNaN(operand) || isNaN(repeat)) return;
+                let results = [];
+                let current = base;
+                for (let i = 0; i < repeat; i++) {
+                    switch (op) {
+                        case '*':
+                            current *= operand;
+                            break;
+                        case '/':
+                            current /= operand;
+                            break;
+                        case '+':
+                            current += operand;
+                            break;
+                        case '-':
+                            current -= operand;
+                            break;
+                    }
+                    results.push([i + 1, current]);
+                }
+                let stats = `=== Stats ===\nBase: ${base}\nOperation: ${op}${operand}\nRepeat: ${repeat}\n\n`;
+                let rows = results.map(r => `${pad(r[0],6)}${pad(r[1],20)}`).join("\n");
+                content.textContent = stats + rows;
+                const data = {
+                    base: baseInput.value,
+                    operand: operandInput.value,
+                    repeat: repeatInput.value,
+                    operation: operationSelect.value,
+                    filename: filenameInput.value,
+                    output: content.textContent
+                };
+                localStorage.setItem('operationRepetitor', JSON.stringify(data));
+                exportBtn.disabled = false;
+            }
+            [baseInput, operandInput, repeatInput, operationSelect, filenameInput].forEach(el => {
+                el.addEventListener('input', calculate);
+            });
+            window.onload = () => {
+                const saved = localStorage.getItem('operationRepetitor');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    baseInput.value = data.base || '';
+                    operandInput.value = data.operand || '';
+                    repeatInput.value = data.repeat || '';
+                    operationSelect.value = data.operation || '*';
+                    filenameInput.value = data.filename || '';
+                    content.textContent = data.output || '';
+                    if (data.output) exportBtn.disabled = false;
+                }
+            };
+
+            function getTimestampedFilename() {
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const date = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+                const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+                return `results_${date}_${time}.csv`;
+            }
+
+            function exportCSV() {
+                const base = baseInput.value || "";
+                const operand = operandInput.value || "";
+                const repeat = repeatInput.value || "";
+                const operation = operationSelect.value || "";
+                const lines = content.textContent.split("\n").filter(line => line.trim());
+                const rows = lines.filter(line => line.match(/^\d/)).map(line => line.trim().split(/\s+/));
+                let csv = "Base,Operand,Operation,Repeat,Step,Result\n";
+                rows.forEach(row => {
+                    const step = row[0];
+                    const result = row[1];
+                    csv += `${base},${operand},${operation},${repeat},${step},${result}\n`;
+                });
+                const blob = new Blob([csv], {
+                    type: 'text/csv;charset=utf-8;'
+                });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                let filename = filenameInput.value.trim();
+                if (!filename) filename = getTimestampedFilename();
+                if (!filename.endsWith(".csv")) filename += ".csv";
+                link.download = filename;
+                link.click();
+            }
+        </script>
+    </body>
+</html>
