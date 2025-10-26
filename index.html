@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Notepad</title>
+        <style>
+            body {
+                font-family: Arial;
+                margin: 0;
+                padding: 0;
+                transition: background-color 0.3s, color 0.3s;
+            }  #tab-container,
+        #controls {
+            position: relative;
+            top: auto;
+            left: auto;
+            right: auto;
+            background: inherit;
+            z-index: 10;
+            transition: all 0.2s;
+            display: flex;
+            overflow-x: auto;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .sticky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            background-color: inherit;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            margin-right: 2px;
+            background-color: black;
+            color: white;
+        }
+
+        .tab.active {
+            background: linear-gradient(to right, cyan, yellow, violet);
+            color: black;
+        }
+
+        button {
+            padding: 10px 16px;
+            background-color: olive;
+            color: white;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: yellow;
+            color: black;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            flex-direction: column;
+            background-color: olive;
+            min-width: 180px;
+            z-index: 1;
+        }
+
+        .dropdown-content.expanded {
+            display: flex;
+            position: relative;
+        }
+
+        #content-container {
+            padding: 20px;
+            border: 2px solid black;
+            min-height: 100vh;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        body.dark-mode {
+            background-color: navy;
+            color: white;
+        }
+
+        body.dark-mode .tab {
+            background-color: white;
+            color: black;
+        }
+
+        body.dark-mode .tab.active {
+            background: linear-gradient(to right, cyan, yellow, violet);
+        }
+
+        body.dark-mode #content-container {
+            background-color: black;
+            border-color: lightgrey;
+        }
+
+        body.dark-mode #controls {
+            background-color: black;
+        }
+
+        #print-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #print-modal>div {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #print-tab-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .color-picker {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="add-tab">Add Tab</button>
+        <button id="delete-tab">Delete Tab</button>
+        <div class="dropdown">
+            <button>Edit</button>
+            <div class="dropdown-content">
+                <button id="undo" data-cmd="undo">Undo</button>
+                <button id="redo" data-cmd="redo">Redo</button>
+                <button id="cut" data-cmd="cut">Cut (Ctrl+X)</button>
+                <button id="copy">Copy (Ctrl+C)</button>
+                <button id="clear">Clear</button>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button>Format</button>
+            <div class="dropdown-content">
+                <button data-cmd="bold">Bold</button>
+                <button data-cmd="italic">Italic</button>
+                <button data-cmd="underline">Underline</button>
+                <button data-cmd="strikeThrough">Strike</button>
+                <button data-cmd="insertOrderedList">Numbered List</button>
+                <button data-cmd="insertUnorderedList">Bulleted List</button>
+                <button data-cmd="justifyLeft">Align Left</button>
+                <button data-cmd="justifyCenter">Align Center</button>
+                <button data-cmd="justifyRight">Align Right</button>
+                <button data-cmd="justifyFull">Justify</button>
+                <button data-cmd="superscript">Superscript</button>
+                <button data-cmd="subscript">Subscript</button>
+                <button id="text-color-btn">Text Color</button>
+                <input type="color" id="text-color-picker" class="color-picker">
+                <button id="highlight-color-btn">Highlight Color</button>
+                <input type="color" id="highlight-color-picker" class="color-picker">
+            </div>
+        </div>
+        <div class="dropdown">
+            <button>Headers</button>
+            <div class="dropdown-content">
+                <button data-cmd="formatBlock" data-value="H1">H1</button>
+                <button data-cmd="formatBlock" data-value="H2">H2</button>
+                <button data-cmd="formatBlock" data-value="H3">H3</button>
+                <button data-cmd="formatBlock" data-value="H4">H4</button>
+                <button data-cmd="formatBlock" data-value="H5">H5</button>
+                <button data-cmd="formatBlock" data-value="H6">H6</button>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button>Insert</button>
+            <div class="dropdown-content">
+                <button data-cmd="createLink">Insert Link</button>
+                <button data-cmd="unlink">Remove Link</button>
+                <button data-cmd="insertImage">Insert Image</button>
+                <button id="insert-line">Line</button>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button>Print</button>
+            <div class="dropdown-content">
+                <button id="print-tab">Print Current Tab</button>
+                <button id="print-all-tabs">Print All Tabs</button>
+                <button id="print-selected-tabs">Print Selected Tabs</button>
+            </div>
+        </div>
+        <button id="toggle-theme">Dark/Light Mode</button>
+    </div>
+    <div id="tab-container"></div>
+    <div id="content-container" contenteditable="true"></div>
+    <div id="print-modal">
+        <div>
+            <h3>Select Tabs to Print</h3>
+            <div id="print-tab-list"></div>
+            <button id="confirm-print-selected">Print</button>
+            <button id="cancel-print-selected">Cancel</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabContainer = document.getElementById('tab-container');
+            const contentContainer = document.getElementById('content-container');
+            const addTabButton = document.getElementById('add-tab');
+            const deleteTabButton = document.getElementById('delete-tab');
+            const toggleThemeButton = document.getElementById('toggle-theme');
+            const clearButton = document.getElementById('clear');
+            const undoButton = document.getElementById('undo');
+            const redoButton = document.getElementById('redo');
+            const cutButton = document.getElementById('cut');
+            const copyButton = document.getElementById('copy');
+            const printTabButton = document.getElementById('print-tab');
+            const printAllTabsButton = document.getElementById('print-all-tabs');
+            const printSelectedTabsButton = document.getElementById('print-selected-tabs');
+            const printModal = document.getElementById('print-modal');
+            const printTabList = document.getElementById('print-tab-list');
+            const confirmPrintBtn = document.getElementById('confirm-print-selected');
+            const cancelPrintBtn = document.getElementById('cancel-print-selected');
+            const textColorBtn = document.getElementById('text-color-btn');
+            const textColorPicker = document.getElementById('text-color-picker');
+            const highlightColorBtn = document.getElementById('highlight-color-btn');
+            const highlightColorPicker = document.getElementById('highlight-color-picker');
+            const insertLineBtn = document.getElementById('insert-line');
+
+            let tabs = [],
+                activeTab = null,
+                historyStack = [],
+                redoStack = [],
+                typingTimer;
+            let lastClickTime = 0,
+                lastClickedTabId = null;
+
+            function pushToHistory() {
+                historyStack.push(JSON.stringify({
+                    tabs,
+                    activeTabId: activeTab?.id
+                }));
+                if (historyStack.length > 100) historyStack.shift();
+                redoStack = [];
+            }
+
+            function restoreState(snapshot) {
+                const state = JSON.parse(snapshot);
+                tabs = state.tabs;
+                saveTabs();
+                renderTabs();
+                switchToTab(state.activeTabId);
+            }
+
+            function initializeTabs() {
+                const storedTabs = localStorage.getItem('tabs');
+                const lastActiveTabId = localStorage.getItem('lastActiveTabId');
+                if (storedTabs) tabs = JSON.parse(storedTabs);
+                if (tabs.length === 0) createDefaultTab();
+                renderTabs();
+                const tabToActivate = tabs.find(tab => tab.id === lastActiveTabId) || tabs[0];
+                switchToTab(tabToActivate.id);
+            }
+
+            function createDefaultTab() {
+                const defaultTab = {
+                    id: `tab-${Date.now()}`,
+                    title: 'Untitled',
+                    content: '',
+                    scrollTop: 0
+                };
+                tabs.push(defaultTab);
+                saveTabs();
+            }
+
+            function saveTabs() {
+                localStorage.setItem('tabs', JSON.stringify(tabs));
+            }
+
+            function switchToTab(tabId) {
+                activeTab = tabs.find(tab => tab.id === tabId);
+                if (!activeTab) return;
+                tabs.forEach(tab => {
+                    const tEl = document.getElementById(tab.id);
+                    if (tEl) tEl.classList.toggle('active', tab.id === tabId);
+                });
+                contentContainer.innerHTML = activeTab.content || '';
+                contentContainer.scrollTop = activeTab.scrollTop || 0;
+                contentContainer.focus();
+                localStorage.setItem('lastActiveTabId', tabId);
+            }
+
+            function renderTabs() {
+                tabContainer.innerHTML = '';
+                tabs.forEach(tab => {
+                    const tabElement = document.createElement('div');
+                    tabElement.id = tab.id;
+                    tabElement.className = 'tab';
+                    tabElement.textContent = tab.title;
+                    saveTabs();
+                    if (activeTab && activeTab.id === tab.id) tabElement.classList.add('active');
+                    tabElement.addEventListener('click', () => {
+                        const now = Date.now();
+                        if (lastClickedTabId === tab.id && now - lastClickTime < 350) {
+                            showRenameField(tabElement, tab);
+                        } else {
+                            switchToTab(tab.id);
+                        }
+                        lastClickedTabId = tab.id;
+                        lastClickTime = now;
+                    });
+                    tabContainer.appendChild(tabElement);
+                });
+            }
+
+            function showRenameField(tabElement, tab) {
+                if (tabElement.querySelector('input')) return;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = tab.title;
+                input.style.width = `${Math.max(tab.title.length * 8, 80)}px`;
+                tabElement.textContent = '';
+                tabElement.appendChild(input);
+                input.focus();
+                input.select();
+                input.addEventListener('blur', () => finishRename(tabElement, tab, input));
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') finishRename(tabElement, tab, input);
+                    if (e.key === 'Escape') tabElement.textContent = tab.title;
+                });
+            }
+
+            function finishRename(tabElement, tab, input) {
+                const newTitle = input.value.trim() || 'Untitled';
+                if (tab.title !== newTitle) {
+                    pushToHistory();
+                    tab.title = newTitle;
+                    saveTabs();
+                }
+                tabElement.textContent = tab.title;
+                renderTabs();
+            }
+
+            function saveScrollPosition() {
+                if (!activeTab) return;
+                activeTab.scrollTop = contentContainer.scrollTop;
+                saveTabs();
+            }
+
+            addTabButton.addEventListener('click', () => {
+                pushToHistory();
+                const newTab = {
+                    id: `tab-${Date.now()}`,
+                    title: `Tab ${tabs.length + 1}`,
+                    content: '',
+                    scrollTop: 0
+                };
+                tabs.push(newTab);
+                saveTabs();
+                renderTabs();
+                switchToTab(newTab.id);
+            });
+
+            deleteTabButton.addEventListener('click', () => {
+                if (!activeTab || tabs.length === 1) return;
+                pushToHistory();
+                const index = tabs.findIndex(t => t.id === activeTab.id);
+                tabs = tabs.filter(t => t.id !== activeTab.id);
+                saveTabs();
+                renderTabs();
+                switchToTab(tabs[Math.min(index, tabs.length - 1)].id);
+            });
+
+            contentContainer.addEventListener('input', () => {
+                if (!activeTab) return;
+                activeTab.content = contentContainer.innerHTML;
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    pushToHistory();
+                    saveScrollPosition();
+                }, 3000);
+            });
+
+            contentContainer.addEventListener('scroll', saveScrollPosition);
+
+            function printContent(html, title = 'Document') {
+                const w = window.open('', '_blank');
+                w.document.write(`
+						<html>
+							<head>
+								<title>${title}</title>
+								<style>
+            body {
+                font-family: Arial;
+                margin: 20px;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                margin-top: 1em;
+                margin-bottom: 0.5em;
+            }
+            hr { border: 1px solid black; margin: 20px 0; }
+            ul, ol { padding-left: 40px; }
+            img { max-width: 100%; height: auto; }
+            p, div {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+            strong, b { font-weight: bold; }
+            em, i { font-style: italic; }
+            u { text-decoration: underline; }
+            s, strike { text-decoration: line-through; }
+        </style>
+							</head>
+							<body>${html}</body>
+						</html>
+`);
+                w.document.close();
+                w.focus();
+                w.print();
+            }
+
+            printTabButton.addEventListener('click', () => {
+                if (activeTab) printContent(activeTab.content, activeTab.title || 'Untitled');
+            });
+
+            printAllTabsButton.addEventListener('click', () => {
+                printContent(tabs.map(t => `
+						<h2>${t.title}</h2>
+						<div>${t.content}</div>
+						<hr>`).join(''), 'All Tabs');
+            });
+
+            printSelectedTabsButton.addEventListener('click', () => {
+                printTabList.innerHTML = '';
+                tabs.forEach(tab => {
+                    const label = document.createElement('label');
+                    label.style.display = 'block';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = tab.id;
+                    checkbox.checked = true;
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(` ${tab.title} `));
+                    printTabList.appendChild(label);
+                });
+                printModal.style.display = 'flex';
+            });
+
+            cancelPrintBtn.addEventListener('click', () => {
+                printModal.style.display = 'none';
+            });
+
+            confirmPrintBtn.addEventListener('click', () => {
+                const selectedIds = Array.from(printTabList.querySelectorAll('input:checked')).map(cb => cb.value);
+                if (selectedIds.length === 0) {
+                    alert('No tabs selected');
+                    return;
+                }
+                const html = tabs.filter(t => selectedIds.includes(t.id)).map(t => `
+							<h2>${t.title}</h2>
+							<div>${t.content}</div>
+							<hr>`).join('');
+                printContent(html, 'Selected Tabs');
+                printModal.style.display = 'none';
+            });
+
+            // Theme
+            if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+            toggleThemeButton.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+            });
+
+            // Editing operations and improved copy/cut handling
+            function getSelectionTextAndRange() {
+                const sel = window.getSelection();
+                if (!sel) return { text: '', range: null, isCollapsed: true };
+                return { text: sel.toString(), range: sel.rangeCount > 0 ? sel.getRangeAt(0) : null, isCollapsed: sel.isCollapsed };
+            }
+
+            function selectAllInContent() {
+                // Select all contents inside the content container
+                const range = document.createRange();
+                range.selectNodeContents(contentContainer);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+
+            async function copySelection() {
+                const selInfo = getSelectionTextAndRange();
+                const selText = selInfo.text;
+                try {
+                    if (selText && navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(selText);
+                        // keep selection
+                        showTemporaryMessage('Copied to clipboard');
+                        return true;
+                    } else {
+                        // If nothing selected, try selecting all first
+                        if (!selText) selectAllInContent();
+                        // Fallback to execCommand
+                        const successful = document.execCommand('copy');
+                        showTemporaryMessage(successful ? 'Copied to clipboard' : 'Unable to copy');
+                        return successful;
+                    }
+                } catch (err) {
+                    // Fallback to execCommand if Clipboard API failed
+                    if (!selText) selectAllInContent();
+                    const successful = document.execCommand('copy');
+                    showTemporaryMessage(successful ? 'Copied to clipboard' : 'Unable to copy');
+                    return successful;
+                }
+            }
+
+            async function cutSelection() {
+                const selInfo = getSelectionTextAndRange();
+                const selText = selInfo.text;
+                try {
+                    if (selText && navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(selText);
+                        // remove the selected content
+                        document.execCommand('delete');
+                        if (activeTab) {
+                            activeTab.content = contentContainer.innerHTML;
+                            saveTabs();
+                            pushToHistory();
+                        }
+                        showTemporaryMessage('Cut to clipboard');
+                        return true;
+                    } else {
+                        // If nothing selected, select all then cut
+                        if (!selText) selectAllInContent();
+                        const successful = document.execCommand('cut');
+                        if (successful && activeTab) {
+                            activeTab.content = contentContainer.innerHTML;
+                            saveTabs();
+                            pushToHistory();
+                        }
+                        showTemporaryMessage(successful ? 'Cut to clipboard' : 'Unable to cut');
+                        return successful;
+                    }
+                } catch (err) {
+                    if (!selText) selectAllInContent();
+                    const successful = document.execCommand('cut');
+                    if (successful && activeTab) {
+                        activeTab.content = contentContainer.innerHTML;
+                        saveTabs();
+                        pushToHistory();
+                    }
+                    showTemporaryMessage(successful ? 'Cut to clipboard' : 'Unable to cut');
+                    return successful;
+                }
+            }
+
+            function showTemporaryMessage(msg, duration = 1200) {
+                // small unobtrusive temporary feedback (no alert)
+                const el = document.createElement('div');
+                el.textContent = msg;
+                el.style.position = 'fixed';
+                el.style.bottom = '20px';
+                el.style.right = '20px';
+                el.style.padding = '8px 12px';
+                el.style.background = 'rgba(0,0,0,0.8)';
+                el.style.color = 'white';
+                el.style.borderRadius = '6px';
+                el.style.zIndex = 2000;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), duration);
+            }
+
+            // Attach improved click handlers
+            copyButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                contentContainer.focus();
+                await copySelection();
+            });
+
+            cutButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                contentContainer.focus();
+                await cutSelection();
+            });
+
+            clearButton.addEventListener('click', () => {
+                if (!activeTab) return;
+                pushToHistory();
+                activeTab.content = '';
+                contentContainer.innerHTML = '';
+                saveTabs();
+            });
+
+            undoButton.addEventListener('click', () => {
+                if (historyStack.length === 0) return;
+                redoStack.push(JSON.stringify({
+                    tabs,
+                    activeTabId: activeTab?.id
+                }));
+                restoreState(historyStack.pop());
+            });
+
+            redoButton.addEventListener('click', () => {
+                if (redoStack.length === 0) return;
+                historyStack.push(JSON.stringify({
+                    tabs,
+                    activeTabId: activeTab?.id
+                }));
+                restoreState(redoStack.pop());
+            });
+
+            // Legacy copy/cut code removed in favor of the above functions
+
+            // Dropdown buttons that use document.execCommand
+            document.querySelectorAll('.dropdown > button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    document.querySelectorAll('.dropdown-content').forEach(dc => {
+                        if (dc !== content) dc.classList.remove('expanded');
+                    });
+                    content.classList.toggle('expanded');
+                });
+            });
+
+            // Handle command buttons inside dropdowns (format/insert that set data-cmd)
+            document.addEventListener('click', e => {
+                const btn = e.target.closest('.dropdown-content button');
+                if (!btn) return;
+                // If button handled separately (copy/cut/clear/etc) return
+                if (btn.id === 'copy' || btn.id === 'cut' || btn.id === 'clear' || btn.id === 'undo' || btn.id === 'redo') return;
+                const cmd = btn.dataset?.cmd;
+                const val = btn.dataset?.value || null;
+                if (!cmd) return;
+                if (cmd === 'createLink' || cmd === 'insertImage') {
+                    const url = prompt(cmd === 'createLink' ? 'Enter URL' : 'Enter image URL', 'https://');
+                    if (!url) return;
+                    document.execCommand(cmd, false, url);
+                } else {
+                    document.execCommand(cmd, false, val);
+                }
+                contentContainer.focus();
+            });
+
+            textColorBtn.addEventListener('click', () => textColorPicker.click());
+            textColorPicker.addEventListener('input', () => {
+                document.execCommand('foreColor', false, textColorPicker.value);
+                contentContainer.focus();
+            });
+            highlightColorBtn.addEventListener('click', () => highlightColorPicker.click());
+            highlightColorPicker.addEventListener('input', () => {
+                document.execCommand('hiliteColor', false, highlightColorPicker.value);
+                contentContainer.focus();
+            });
+            insertLineBtn.addEventListener('click', () => {
+                document.execCommand('insertHorizontalRule');
+                contentContainer.focus();
+            });
+
+            // Keyboard shortcuts: Ctrl/Cmd + A (select all), C (copy), X (cut)
+            document.addEventListener('keydown', async (e) => {
+                const isMac = navigator.platform.toLowerCase().includes('mac');
+                const mod = isMac ? e.metaKey : e.ctrlKey;
+                if (!mod) return;
+
+                const key = e.key.toLowerCase();
+
+                // Only act if focus is in the content container (or no focused element)
+                const activeIsInContent = document.activeElement === contentContainer || contentContainer.contains(document.activeElement);
+
+                if (key === 'a') {
+                    // select all within content area
+                    if (activeIsInContent) {
+                        e.preventDefault();
+                        selectAllInContent();
+                    }
+                } else if (key === 'c') {
+                    if (activeIsInContent) {
+                        e.preventDefault();
+                        await copySelection();
+                    }
+                } else if (key === 'x') {
+                    if (activeIsInContent) {
+                        e.preventDefault();
+                        await cutSelection();
+                    }
+                }
+            });
+
+            initializeTabs();
+            window.addEventListener('scroll', () => {
+                const controlsTop = document.getElementById('controls').getBoundingClientRect().top;
+                if (controlsTop <= 0) {
+                    document.getElementById('controls').classList.add('sticky');
+                    document.getElementById('tab-container').classList.add('sticky');
+                } else {
+                    document.getElementById('controls').classList.remove('sticky');
+                    document.getElementById('tab-container').classList.remove('sticky');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
