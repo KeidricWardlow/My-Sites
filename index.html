@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Arithmetics</title>
+        <style>
+            body {
+                background: linear-gradient(to right, yellow, chartreuse, cyan);
+                margin: 0;
+                font-family: "Times New Roman", serif;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .container {
+                padding: 20px;
+                text-align: center;
+                color: black;
+                max-width: 600px;
+                width: 100%;
+                background: rgba(255, 255, 255, 0.6);
+                border-radius: 10px;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            }
+
+            textarea {
+                resize: none;
+                width: 100%;
+                margin-top: 20px;
+                font-size: 14px;
+            }
+
+            button {
+                margin-top: 10px;
+                margin-right: 5px;
+                padding: 10px 15px;
+                cursor: pointer;
+                background: blue;
+                color: white;
+                border: 2px solid black;
+                font-size: 16px;
+                font-family: "Times New Roman", Times, serif;
+                border-radius: 6px;
+            }
+
+            button:hover {
+                background: linear-gradient(to right, olive, yellow);
+            }
+
+            h2 {
+                margin-top: 20px;
+            }
+
+            #resultDisplay {
+                margin-top: 15px;
+                font-size: 18px;
+                text-align: center;
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <input type="file" id="fileInput" accept=".txt" />
+            <textarea id="numberInput" rows="10" placeholder="Enter arithmetics separated by newline... (i.e. 2^5, 9*9)"></textarea>
+            <div>
+                <button id="calculateButton">Calculate</button>
+                <button id="copyButton">Copy Results</button>
+                <button id="exportButton">Export CSV</button>
+                <button id="printButton">Print Results</button>
+                <button id="undoButton">Undo</button>
+                <button id="redoButton">Redo</button>
+                <button id="clearButton">Clear All</button>
+            </div>
+            <h2>Result:</h2>
+            <div id="resultDisplay"></div>
+        </div>
+        <script>
+            const fileInput = document.getElementById('fileInput');
+            const numberInput = document.getElementById('numberInput');
+            const calculateButton = document.getElementById('calculateButton');
+            const copyButton = document.getElementById('copyButton');
+            const exportButton = document.getElementById('exportButton');
+            const printButton = document.getElementById('printButton');
+            const clearButton = document.getElementById('clearButton');
+            const undoButton = document.getElementById('undoButton');
+            const redoButton = document.getElementById('redoButton');
+            const resultDisplay = document.getElementById('resultDisplay');
+            let lastResults = [];
+            let undoStack = [];
+            let redoStack = [];
+
+            function saveState() {
+                undoStack.push({
+                    input: numberInput.value,
+                    result: resultDisplay.innerHTML
+                });
+                redoStack = [];
+            }
+            window.addEventListener('load', () => {
+                const savedInput = localStorage.getItem('numberInput');
+                const savedResult = localStorage.getItem('resultDisplay');
+                if (savedInput) numberInput.value = savedInput;
+                if (savedResult) resultDisplay.innerHTML = savedResult;
+            });
+            fileInput.addEventListener('change', event => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        saveState();
+                        numberInput.value = e.target.result;
+                        localStorage.setItem('numberInput', numberInput.value);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            calculateButton.addEventListener('click', () => {
+                saveState();
+                const input = numberInput.value.trim();
+                let results = [];
+                if (input) {
+                    const lines = input.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            let {
+                                original,
+                                result
+                            } = evaluateExpression(line.trim());
+                            if (typeof result === 'number' && !isNaN(result)) {
+                                results.push(`${original} = ${result}`);
+                            } else {
+                                results.push(`${line.trim()} = Error`);
+                            }
+                        }
+                    });
+                    if (results.length > 0) {
+                        resultDisplay.innerHTML = results.join('\n');
+                        localStorage.setItem('resultDisplay', resultDisplay.innerHTML);
+                        lastResults = results;
+                    } else {
+                        resultDisplay.innerHTML = 'No valid expressions to evaluate.';
+                    }
+                    localStorage.setItem('numberInput', numberInput.value);
+                } else {
+                    resultDisplay.innerHTML = 'Please enter valid expressions.';
+                }
+            });
+            copyButton.addEventListener('click', () => {
+                if (lastResults.length > 0) {
+                    const textToCopy = lastResults.join('\n');
+                    const tempTextArea = document.createElement("textarea");
+                    tempTextArea.value = textToCopy;
+                    tempTextArea.style.position = "fixed";
+                    tempTextArea.style.opacity = "0";
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.focus();
+                    tempTextArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempTextArea);
+                    alert("Results copied to clipboard!");
+                }
+            });
+            exportButton.addEventListener('click', () => {
+                if (lastResults.length > 0) {
+                    let csvContent = "data:text/csv;charset=utf-8," + lastResults.map(line => line.replace(" = ", ",")).join("\n");
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodeURI(csvContent));
+                    link.setAttribute("download", "results.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            });
+            printButton.addEventListener('click', () => {
+                        const resultsDiv = document.getElementById('resultDisplay');
+                        if (resultsDiv.innerHTML.trim() === '') {
+                            alert("No results to print.");
+                            return;
+                        }
+                        const w = window.open('', '', 'height=600,width=800');
+                        w.document.write(' < html > < head > < title > Print Results < /title> < /head> < body > ');
+                                w.document.write(resultsDiv.innerHTML.replace(/\n/g, ' < br > '));
+                                        w.document.write(' < /body> < /html>');
+                                            w.document.close(); w.print();
+                                        }); clearButton.addEventListener('click', () => {
+                                        saveState();
+                                        numberInput.value = '';
+                                        resultDisplay.innerHTML = '';
+                                        lastResults = [];
+                                        localStorage.removeItem('numberInput');
+                                        localStorage.removeItem('resultDisplay');
+                                    }); undoButton.addEventListener('click', () => {
+                                        if (undoStack.length > 0) {
+                                            const currentState = {
+                                                input: numberInput.value,
+                                                result: resultDisplay.innerHTML
+                                            };
+                                            redoStack.push(currentState);
+                                            const prevState = undoStack.pop();
+                                            numberInput.value = prevState.input;
+                                            resultDisplay.innerHTML = prevState.result;
+                                            localStorage.setItem('numberInput', prevState.input);
+                                            localStorage.setItem('resultDisplay', prevState.result);
+                                        }
+                                    }); redoButton.addEventListener('click', () => {
+                                        if (redoStack.length > 0) {
+                                            const currentState = {
+                                                input: numberInput.value,
+                                                result: resultDisplay.innerHTML
+                                            };
+                                            undoStack.push(currentState);
+                                            const nextState = redoStack.pop();
+                                            numberInput.value = nextState.input;
+                                            resultDisplay.innerHTML = nextState.result;
+                                            localStorage.setItem('numberInput', nextState.input);
+                                            localStorage.setItem('resultDisplay', nextState.result);
+                                        }
+                                    });
+
+                                    function evaluateExpression(expression) {
+                                        let originalExpr = expression;
+                                        try {
+                                            expression = expression.replace(/\*\*/g, '^');
+                                            expression = expression.replace(/√\(([^()]+)\)/g, (_, inner) => `Math.sqrt(${evaluateExpression(inner).result})`);
+                                            expression = expression.replace(/√(\d+(\.\d+)?)/g, (_, num) => `Math.sqrt(${num})`);
+                                            expression = expression.replace(/π\s*(\d+(\.\d+)?)/g, (_, num) => `Math.PI*${num}`);
+                                            while (/(\d+)(!+)/.test(expression)) {
+                                                expression = expression.replace(/(\d+)(!+)/, (_, base, bangs) => {
+                                                    let innerValue = parseInt(base);
+                                                    let factorialResult = multiFactorial(innerValue, bangs.length);
+                                                    return factorialResult.toString();
+                                                });
+                                            }
+                                            expression = expression.replace(/\^/g, '**');
+                                            return {
+                                                original: originalExpr,
+                                                result: eval(expression)
+                                            };
+                                        } catch {
+                                            return {
+                                                original: originalExpr,
+                                                result: NaN
+                                            };
+                                        }
+                                    }
+
+                                    function factorial(n) {
+                                        if (n < 0) return NaN;
+                                        if (n === 0 || n === 1) return 1;
+                                        let res = 1;
+                                        for (let i = 2; i <= n; i++) res *= i;
+                                        return res;
+                                    }
+
+                                    function multiFactorial(n, k) {
+                                        if (n < 0) return NaN;
+                                        let res = 1;
+                                        for (let i = n; i > 0; i -= k) res *= i;
+                                        return res;
+                                    }
+        </script>
+    </body>
+</html>
