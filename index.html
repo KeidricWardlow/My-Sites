@@ -1,0 +1,278 @@
+<!DOCTYPE html>    
+<html lang="en">    
+<head>    
+  <meta charset="UTF-8" />    
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>    
+  <title>Integer Generator</title>    
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet"/>    
+  <style>    
+    html, body {    
+      height: 100%;    
+      margin: 0;    
+      font-family: 'Comfortaa', sans-serif;    
+      display: flex;    
+      justify-content: center;    
+      align-items: center;    
+      background: linear-gradient(135deg, cyan, olive, chartreuse);    
+      background-size: cover;    
+      background-attachment: fixed;    
+    }    
+    .container {    
+      display: flex;    
+      flex-direction: column;    
+      justify-content: center;    
+      align-items: center;    
+      width: 100%;    
+      max-width: 900px;    
+      padding: 20px;    
+      box-sizing: border-box;    
+      background: rgba(255, 255, 255, 0.1);    
+      border-radius: 15px;    
+      text-align: center;    
+      overflow-y: auto;    
+      margin: auto;    
+    }    
+    .input-grid {    
+      display: grid;    
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));    
+      gap: 10px;    
+      width: 100%;    
+      margin-bottom: 20px;    
+      justify-items: center;    
+    }    
+    input, textarea, button, label {    
+      font-family: 'Comfortaa', sans-serif;    
+      font-size: clamp(1rem, 2.5vw, 1.2rem);    
+      text-align: center;    
+    }    
+    input {    
+      padding: 12px;    
+      border-radius: 5px;    
+      border: 1px solid black;    
+      width: 100%;    
+      box-sizing: border-box;    
+    }    
+    textarea {    
+      width: 100%;    
+      height: clamp(250px, 40vh, 500px);    
+      border-radius: 5px;    
+      border: 1px solid black;    
+      padding: 12px;    
+      resize: vertical;    
+      box-sizing: border-box;    
+      overflow-y: auto;    
+      margin-bottom: 20px;    
+    }    
+    .controls, .undo-redo {    
+      display: flex;    
+      flex-wrap: wrap;    
+      gap: 10px;    
+      width: 100%;    
+      justify-content: center;    
+      margin-bottom: 20px;    
+    }    
+    button {    
+      flex: 1 1 150px;    
+      min-width: 120px;    
+      font-size: 1.1em;    
+      padding: 12px 0;    
+      border: none;    
+      border-radius: 5px;    
+      cursor: pointer;    
+      background-color: navy;    
+      color: white;    
+      transition: all 0.3s ease;    
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);    
+    }    
+    button:hover {    
+      background: linear-gradient(to right, white, yellow);    
+      color: black;    
+    }    
+    label {    
+      font-weight: bold;    
+      margin-bottom: 5px;    
+    }    
+    #sum {    
+      margin-top: 10px;    
+      padding: 12px;    
+      text-align: center;    
+      border-radius: 5px;    
+      border: 1px solid black;    
+      width: 100%;    
+      max-width: 300px;    
+    }    
+  </style>    
+</head>    
+<body>    
+  <div class="container">    
+    <div class="input-grid">    
+      <input type="number" id="smallest" placeholder="Smallest quantity" />    
+      <input type="number" id="largest" placeholder="Largest quantity" />    
+      <input type="number" id="lines" placeholder="Lines" />    
+      <input type="number" id="quota" placeholder="Quota (Exact)" />    
+      <input type="number" id="minQuota" placeholder="Minimum Quota" />    
+      <input type="number" id="maxQuota" placeholder="Maximum Quota" />    
+      <input type="text" id="filename" placeholder="File name (optional)" />    
+    </div>    
+    <textarea id="output" readonly></textarea>    
+    <div class="undo-redo">    
+      <button id="undo">Undo</button>    
+      <button id="redo">Redo</button>    
+    </div>    
+    <div class="controls">    
+      <button id="generate">Generate</button>    
+      <button id="copy">Copy</button>    
+      <button id="print">Print</button>    
+      <button id="export">Export CSV</button>    
+      <button id="clear">Clear</button>    
+    </div>    
+    <label for="sum">Adds up to:</label>    
+    <input type="text" id="sum" readonly />    
+  </div>    
+  <script>    
+    const inputs=['smallest','largest','lines','quota','minQuota','maxQuota','filename','output','sum'];    
+    function saveToLocal(){inputs.forEach(id=>{const el=document.getElementById(id);if(el) localStorage.setItem(id,el.value);});}    
+    function loadFromLocal(){inputs.forEach(id=>{const el=document.getElementById(id);const val=localStorage.getItem(id);if(val!==null) el.value=val;});}    
+    loadFromLocal();    
+    let history=[];    
+    let historyIndex=-1;    
+    function captureState(){    
+      const state={};    
+      inputs.forEach(id=>state[id]=document.getElementById(id).value);    
+      history=history.slice(0,historyIndex+1);    
+      history.push(state);    
+      historyIndex=history.length-1;    
+    }    
+    function restoreState(index){    
+      const state=history[index];    
+      if(!state) return;    
+      inputs.forEach(id=>{document.getElementById(id).value=state[id];});    
+    }    
+    function triggerStateChange(){    
+      captureState();    
+      saveToLocal();    
+    }    
+    inputs.forEach(id=>{    
+      const el=document.getElementById(id);    
+      el.addEventListener('input',triggerStateChange);    
+    });    
+    captureState();    
+    document.getElementById('undo').addEventListener('click',()=>{    
+      if(historyIndex>0){    
+        historyIndex--;    
+        restoreState(historyIndex);    
+      }    
+    });    
+    document.getElementById('redo').addEventListener('click',()=>{    
+      if(historyIndex<history.length-1){    
+        historyIndex++;    
+        restoreState(historyIndex);    
+      }    
+    });    
+    document.getElementById('generate').addEventListener('click',function(){    
+      const minVal=document.getElementById('smallest').value;    
+      const maxVal=document.getElementById('largest').value;    
+      const count=parseInt(document.getElementById('lines').value);    
+      const min=minVal===''?null:parseInt(minVal);    
+      const max=maxVal===''?null:parseInt(maxVal);    
+      const minQuotaStr=document.getElementById('minQuota').value;    
+      const maxQuotaStr=document.getElementById('maxQuota').value;    
+      const exactQuotaStr=document.getElementById('quota').value;    
+      const minQuota=minQuotaStr===''?null:parseInt(minQuotaStr);    
+      const maxQuota=maxQuotaStr===''?null:parseInt(maxQuotaStr);    
+      const exactQuota=exactQuotaStr===''?null:parseInt(exactQuotaStr);    
+      if(isNaN(count)||count<=0){alert('Enter a valid count.');return}    
+      function generateWithTargetSum(targetSum){    
+        let numbers=[];let remaining=targetSum;    
+        const minLimit=min!==null?min:0;    
+        const maxLimit=max!==null?max:targetSum;    
+        for(let i=0;i<count-1;i++){    
+          let rangeMax=Math.min(maxLimit,remaining-(count-i-1)*minLimit);    
+          let rangeMin=Math.max(minLimit,remaining-(count-i-1)*maxLimit);    
+          if(rangeMin>rangeMax) return null;    
+          let val=Math.floor(Math.random()*(rangeMax-rangeMin+1))+rangeMin;    
+          numbers.push(val);remaining-=val;    
+        }    
+        numbers.push(remaining);    
+        return numbers.sort(()=>Math.random()-0.5);    
+      }    
+      let nums=null,target=0;    
+      if(exactQuota!==null){    
+        target=exactQuota;while(!nums) nums=generateWithTargetSum(target);    
+      } else {    
+        while(!nums){    
+          if(minQuota!==null&&maxQuota!==null&&minQuota<=maxQuota)    
+            target=Math.floor(Math.random()*(maxQuota-minQuota+1))+minQuota;    
+          else if(minQuota!==null){    
+            let upperPossible=(max!==null?max:minQuota+count)*count;    
+            target=Math.floor(Math.random()*(upperPossible-minQuota+1))+minQuota;    
+          } else if(maxQuota!==null){    
+            let lowerPossible=(min!==null?min:0)*count;    
+            target=Math.floor(Math.random()*(maxQuota-lowerPossible+1))+lowerPossible;    
+          } else {    
+            let lowest=(min!==null?min:0)*count;    
+            let highest=(max!==null?max:0)*count;    
+            target=Math.floor(Math.random()*(highest-lowest+1))+lowest;    
+          }    
+          nums=generateWithTargetSum(target);    
+        }    
+      }    
+      const sum=nums.reduce((acc,n)=>acc+n,0);    
+      document.getElementById('output').value=nums.join('\n');    
+      document.getElementById('sum').value=sum;    
+      triggerStateChange();    
+    });    
+    const minQuotaInput=document.getElementById('minQuota');    
+    const maxQuotaInput=document.getElementById('maxQuota');    
+    const exactQuotaInput=document.getElementById('quota');    
+    function toggleQuotaInputs(){    
+      const minQuotaSet=minQuotaInput.value.trim()!=='';    
+      const maxQuotaSet=maxQuotaInput.value.trim()!=='';    
+      const exactQuotaSet=exactQuotaInput.value.trim()!=='';    
+      exactQuotaInput.disabled=minQuotaSet||maxQuotaSet;    
+      minQuotaInput.disabled=exactQuotaSet;    
+      maxQuotaInput.disabled=exactQuotaSet;    
+    }    
+    minQuotaInput.addEventListener('input',toggleQuotaInputs);    
+    maxQuotaInput.addEventListener('input',toggleQuotaInputs);    
+    exactQuotaInput.addEventListener('input',toggleQuotaInputs);    
+    document.getElementById('copy').addEventListener('click',function(){    
+      const output=document.getElementById('output').value.trim();    
+      if(!output) return;    
+      navigator.clipboard.writeText(output).then(()=>{alert('Output copied to clipboard!');});    
+    });    
+    document.getElementById('print').addEventListener('click',function(){    
+      const output=document.getElementById('output').value.trim();    
+      if(!output) return;    
+      const w=window.open('','_blank');    
+      w.document.write('<pre>'+output+'</pre>');    
+      w.document.close();    
+      w.print();    
+    });    
+    document.getElementById('export').addEventListener('click',function(){    
+      const output=document.getElementById('output').value.trim();    
+      const sum=document.getElementById('sum').value.trim();    
+      if(!output) return;    
+      const filename=document.getElementById('filename').value.trim()||'export.csv';    
+      const now=new Date();    
+      const timestamp=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;    
+      const settings=[["Settings"],["Smallest",document.getElementById('smallest').value],["Largest",document.getElementById('largest').value],["Lines",document.getElementById('lines').value],["Quota (Exact)",document.getElementById('quota').value],["Minimum Quota",document.getElementById('minQuota').value],["Maximum Quota",document.getElementById('maxQuota').value],["File Name",filename],["Generated On",timestamp],[""],["Generated Values"],["value","sum"]];    
+      const rows=output.split('\n').map(val=>[val,sum]);    
+      const all=settings.concat(rows);    
+      const csvContent="data:text/csv;charset=utf-8,"+all.map(r=>r.join(",")).join("\n");    
+      const link=document.createElement("a");    
+      link.setAttribute("href",encodeURI(csvContent));    
+      link.setAttribute("download",filename);    
+      document.body.appendChild(link);    
+      link.click();    
+      document.body.removeChild(link);    
+    });    
+    document.getElementById('clear').addEventListener('click',function(){    
+      if(confirm('Are you sure you want to clear all fields?')){    
+        inputs.forEach(id=>{const el=document.getElementById(id);if(el) el.value='';localStorage.removeItem(id);});    
+        triggerStateChange();    
+      }    
+    });    
+  </script>    
+</body>    
+</html>
