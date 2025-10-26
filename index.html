@@ -74,6 +74,7 @@
             <button id="remove-input">Remove Point</button>
             <button id="undo">Undo</button>
             <button id="redo">Redo</button>
+            <button id="clear">Clear</button>
             <br>
             <br>
             <input type="color" id="color-picker" value="#ffff00">
@@ -149,7 +150,8 @@
                     historyIndex++;
                     applyStateSnapshot(JSON.parse(history[historyIndex]));
                 }
-			}
+            }
+
             function getPointsData() {
                 return Array.from(inputsContainer.getElementsByClassName('point-input')).map(container => ({
                     label: container.querySelector('.label-input').value,
@@ -177,6 +179,8 @@
                 div.className = 'point-input';
                 div.innerHTML = `
         
+										
+										
 										<input type="text" class="label-input" placeholder="Point ${inputsContainer.childElementCount + 1}" value="${label}">
 											<input type="number" class="value-input" min="0" value="${value}">
       `;
@@ -272,11 +276,17 @@
                 const filename = filenameInput.value.trim() || 'chart';
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
+												
+												
 												<html>
 													<body>`);
                 printWindow.document.write(`
+														
+														
 														<img src="${areaChartCanvas.toDataURL()}" style="width: 100%;"/>`);
                 printWindow.document.write(`
+													
+													
 													</body>
 												</html>`);
                 printWindow.document.close();
@@ -295,6 +305,21 @@
             });
             if (fileTypeInput) fileTypeInput.addEventListener('change', () => {
                 saveOtherSettingsToLocalStorage();
+                pushHistory();
+            });
+            const clearButton = document.getElementById('clear');
+            clearButton.addEventListener('click', () => {
+                const firstInput = inputsContainer.firstElementChild;
+                inputsContainer.innerHTML = '';
+                if (firstInput) {
+                    const firstLabel = firstInput.querySelector('.label-input').value || 'Point 1';
+                    const firstValue = firstInput.querySelector('.value-input').value || '';
+                    addPoint(firstLabel, firstValue);
+                } else {
+                    addPoint('Point 1', '');
+                }
+                savePointsToLocalStorage();
+                drawChart();
                 pushHistory();
             });
         </script>
