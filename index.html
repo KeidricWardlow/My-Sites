@@ -149,8 +149,7 @@
                     historyIndex++;
                     applyStateSnapshot(JSON.parse(history[historyIndex]));
                 }
-            }
-            // --- Core Functions ---
+			}
             function getPointsData() {
                 return Array.from(inputsContainer.getElementsByClassName('point-input')).map(container => ({
                     label: container.querySelector('.label-input').value,
