@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Factorization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Muli:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Muli', sans-serif;
+            background: linear-gradient(to right, lavender, orange, red);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+            margin: auto;
+            box-sizing: border-box;
+        }
+
+        .input-container {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid black;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type='file'],
+        button,
+        input[type='text'] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid black;
+            font-family: "Muli", sans-serif;
+            box-sizing: border-box;
+        }
+
+        input[type='file'] {
+            background-color: lightgrey;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        input[type='file']:hover {
+            background-color: orange;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: blue;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background-color: yellow;
+            color: black;
+        }
+
+        #results {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid black;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: white;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        .copy-button-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #copyButton {
+            width: 100%;
+            background-color: lime;
+            color: black;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        #copyButton:hover {
+            background-color: lavender;
+            color: black;
+        }
+
+        .undo-redo-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        #undoButton {
+            background-color: gray;
+            color: white;
+        }
+
+        #redoButton {
+            background-color: darkgray;
+            color: white;
+        }
+
+        #undoButton:hover,
+        #redoButton:hover {
+            background-color: yellow;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="file" id="fileUpload" accept=".txt" />
+        <div class="input-container">
+            <textarea id="numberInput" rows="10" placeholder="Enter numbers, one per line"></textarea>
+        </div>
+        <div class="button-container">
+            <button id="calculateButton">Calculate</button>
+            <button id="clearButton" style="background-color:red;">Clear</button>
+            <input type="text" id="fileName" placeholder="Enter file name (optional)" />
+            <button id="exportCsvButton">Export CSV</button>
+            <button id="printButton">Print</button>
+        </div>
+        <div id="results"></div>
+        <div class="copy-button-container">
+            <button id="copyButton">Copy</button>
+        </div>
+        <div class="undo-redo-container">
+            <button id="undoButton">Undo</button>
+            <button id="redoButton">Redo</button>
+        </div>
+    </div>
+
+    <script>
+        let historyStack = [];
+        let redoStack = [];
+
+        function saveState() {
+            const state = {
+                numberInput: document.getElementById('numberInput').value,
+                results: document.getElementById('results').innerHTML,
+                fileName: document.getElementById('fileName').value
+            };
+            historyStack.push(JSON.stringify(state));
+            if (historyStack.length > 50) historyStack.shift(); 
+            redoStack = [];
+        }
+
+        function restoreState(state) {
+            const parsed = JSON.parse(state);
+            document.getElementById('numberInput').value = parsed.numberInput;
+            document.getElementById('results').innerHTML = parsed.results;
+            document.getElementById('fileName').value = parsed.fileName;
+        }
+
+        function primeFactors(n) {
+            const factors = {};
+            for (let i = 2; i <= n; i++) {
+                while (n % i === 0) {
+                    factors[i] = (factors[i] || 0) + 1;
+                    n /= i;
+                }
+            }
+            return factors;
+        }
+
+        function formatFactors(factors) {
+            return Object.entries(factors).map(([b, e]) => e > 1 ? `${b}^${e}` : `${b}`).join(' × ');
+        }
+
+        function processNumbers(numbers) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            numbers.forEach(number => {
+                const num = parseInt(number);
+                if (isNaN(num) || num <= 0) {
+                    resultsDiv.innerHTML += `<p>${number} is not a valid positive integer.</p>`;
+                } else {
+                    const factors = primeFactors(num);
+                    const factorStr = formatFactors(factors);
+                    resultsDiv.innerHTML += `<p data-number="${num}" data-factors="${factorStr}">Prime factors of ${num}: ${factorStr}</p>`;
+                }
+            });
+            localStorage.setItem("numberInput", document.getElementById("numberInput").value);
+            localStorage.setItem("results", resultsDiv.innerHTML);
+        }
+
+        document.getElementById('calculateButton').addEventListener('click', function() {
+            saveState();
+            const input = document.getElementById('numberInput').value;
+            const numbers = input.split('\n').map(num => num.trim()).filter(num => num !== '');
+            processNumbers(numbers);
+        });
+
+        document.getElementById('clearButton').addEventListener('click', function() {
+            if (!confirm("Are you sure you want to clear everything?")) return;
+            saveState();
+            document.getElementById('numberInput').value = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('fileName').value = '';
+            localStorage.clear();
+        });
+
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                saveState();
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const contents = ev.target.result;
+                    document.getElementById('numberInput').value = contents;
+                    const numbers = contents.split('\n').map(num => num.trim()).filter(num => num !== '');
+                    processNumbers(numbers);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv.innerText.trim() === '') {
+                alert("No results to copy.");
+                return;
+            }
+            const range = document.createRange();
+            range.selectNodeContents(resultsDiv);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                selection.removeAllRanges();
+                alert("Results copied to clipboard!");
+            } catch (err) {
+                alert("Failed to copy results.");
+            }
+        });
+
+        document.getElementById('exportCsvButton').addEventListener('click', function() {
+            const rows = [["Number", "Prime Factors"]];
+            document.querySelectorAll('#results p').forEach(p => {
+                const number = p.getAttribute("data-number");
+                const factors = p.getAttribute("data-factors");
+                if (number && factors) rows.push([number, factors]);
+            });
+            if (rows.length === 1) {
+                alert("No results to export.");
+                return;
+            }
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(r => r.map(x => `"${x}"`).join(",")).join("\n");
+            const fileNameInput = document.getElementById('fileName').value.trim();
+            const fileName = fileNameInput ? fileNameInput + ".csv" : "prime_factors.csv";
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        document.getElementById('printButton').addEventListener('click', function() {
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv.innerHTML.trim() === '') {
+                alert("No results to print.");
+                return;
+            }
+            const w = window.open('', '', 'height=600,width=800');
+            w.document.write('<html><head><title>Print Results</title></head><body>');
+            w.document.write(resultsDiv.innerHTML);
+            w.document.write('</body></html>');
+            w.document.close();
+            w.print();
+        });
+
+        document.getElementById('undoButton').addEventListener('click', function() {
+            if (historyStack.length > 1) {
+                const current = historyStack.pop();
+                redoStack.push(current);
+                restoreState(historyStack[historyStack.length - 1]);
+            } else {
+                alert("Nothing to undo.");
+            }
+        });
+
+        document.getElementById('redoButton').addEventListener('click', function() {
+            if (redoStack.length > 0) {
+                const state = redoStack.pop();
+                historyStack.push(state);
+                restoreState(state);
+            } else {
+                alert("Nothing to redo.");
+            }
+        });
+
+        window.addEventListener('load', function() {
+            const savedInput = localStorage.getItem("numberInput");
+            const savedResults = localStorage.getItem("results");
+            const savedFileName = localStorage.getItem("fileName");
+            if (savedInput) document.getElementById("numberInput").value = savedInput;
+            if (savedResults) document.getElementById("results").innerHTML = savedResults;
+            if (savedFileName) document.getElementById("fileName").value = savedFileName;
+            saveState();
+        });
+
+        document.getElementById("fileName").addEventListener("input", function() {
+            saveState();
+            localStorage.setItem("fileName", this.value);
+        });
+    </script>
+</body>
+</html>
