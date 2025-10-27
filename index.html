@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Summation</title>
+  <style>
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(to right, black, white, grey);
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      background: rgba(255,255,255,0.85);
+      border: 2px solid black;
+      border-radius: 12px;
+      box-shadow: 4px 4px 14px rgba(0,0,0,0.5);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    .number-input {
+      width: 90px;
+      padding: 8px;
+      font-size: 1.1em;
+      border: 1px solid black;
+      border-radius: 5px;
+      text-align: center;
+      font-family: Georgia, serif;
+    }
+
+    button {
+      font-family: Georgia, serif;
+      font-size: 1.05em;
+      padding: 6px 12px;
+      background: lavender;
+      border: 1.5px solid black;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background .2s;
+      margin: 4px;
+    }
+
+    button:hover {
+      background: turquoise;
+    }
+
+    .results-box {
+      margin-top: 18px;
+      width: 100%;
+      max-width: 480px;
+      min-height: 40px;
+      max-height: 160px;
+      overflow-y: auto;
+      background: moccasin;
+      border: 1.5px solid black;
+      border-radius: 7px;
+      padding: 14px;
+      font-size: 1.1em;
+      color: black;
+      white-space: pre-wrap;
+    }
+
+    hr {
+      border: none;
+      border-top: 1.5px solid black;
+      margin: 8px 0;
+    }
+
+    @media(max-width:600px) {
+      .container, .results-box { max-width: 98vw; }
+      .row { flex-direction: column; gap: 8px; }
+      .results-box { font-size: 1em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="rows-container"></div>
+    <div>
+      <button id="add-row-btn">Add Row</button>
+      <button id="clear-btn">Clear</button>
+      <button id="undo-btn">Undo</button>
+      <button id="redo-btn">Redo</button>
+      <button id="export-btn">Export CSV</button>
+    </div>
+    <div class="results-box" id="resultsBox"></div>
+  </div>
+  <script>
+    const STORAGE_KEY = "summation-app-data";
+    const rowsContainer = document.getElementById('rows-container');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    const resultsBox = document.getElementById('resultsBox');
+
+    let history = [];
+    let historyIndex = -1;
+    const maxHistory = 50;
+
+    function pushHistory() {
+      const rowsData = Array.from(rowsContainer.querySelectorAll('.row')).map(row => {
+        const bRaw = row.querySelector('.base-input').value;
+        const eRaw = row.querySelector('.end-input').value;
+        const base = bRaw === "" ? null : parseInt(bRaw, 10);
+        const end = eRaw === "" ? null : parseInt(eRaw, 10);
+        return { base, end };
+      });
+      const state = JSON.stringify({
+        rows: rowsData,
+        results: resultsBox.innerHTML
+      });
+      if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
+      }
+      history.push(state);
+      if (history.length > maxHistory) history.shift();
+      historyIndex = history.length - 1;
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        restoreState(history[historyIndex]);
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreState(history[historyIndex]);
+      }
+    }
+
+    function restoreState(state) {
+      try {
+        const data = JSON.parse(state);
+        if (data && Array.isArray(data.rows)) {
+          rowsContainer.innerHTML = '';
+          data.rows.forEach(r => rowsContainer.appendChild(createRow(r.base, r.end)));
+          setUpListeners();
+          calculateSum();
+          if (typeof data.results === 'string') {
+            resultsBox.innerHTML = data.results;
+          }
+          saveToLocalStorage();
+        } else if (data && data.html) {
+          rowsContainer.innerHTML = data.html;
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          saveToLocalStorage();
+        }
+      } catch (e) {
+        console.error('Failed to restore state', e);
+      }
+    }
+
+    function saveToLocalStorage() {
+      const rowsData = Array.from(rowsContainer.querySelectorAll('.row')).map(row => {
+        const bRaw = row.querySelector('.base-input').value;
+        const eRaw = row.querySelector('.end-input').value;
+        const base = bRaw === "" ? null : parseInt(bRaw, 10);
+        const end = eRaw === "" ? null : parseInt(eRaw, 10);
+        return { base, end };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          rows: rowsData,
+          results: resultsBox.innerHTML
+        }));
+      } catch (e) {
+        console.error('Failed to save to localStorage', e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return false;
+      try {
+        const data = JSON.parse(saved);
+        if (data && Array.isArray(data.rows)) {
+          rowsContainer.innerHTML = '';
+          data.rows.forEach(r => rowsContainer.appendChild(createRow(r.base, r.end)));
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          calculateSum();
+          return true;
+        } else if (data && data.html) {
+          rowsContainer.innerHTML = data.html;
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          calculateSum();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('Failed to load from localStorage', e);
+        return false;
+      }
+    }
+
+    function createRow(base = null, end = null) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      const input1 = document.createElement('input');
+      input1.type = 'number';
+      input1.className = 'number-input base-input';
+      input1.placeholder = 'Base (start)';
+      const input2 = document.createElement('input');
+      input2.type = 'number';
+      input2.className = 'number-input end-input';
+      input2.placeholder = 'End (inclusive)';
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      input1.value = (base === null || base === undefined) ? '' : base;
+      input2.value = (end === null || end === undefined) ? '' : end;
+      if (!input1.dataset.listenerAttached) {
+        input1.addEventListener('input', handleChange);
+        input1.dataset.listenerAttached = '1';
+      }
+      if (!input2.dataset.listenerAttached) {
+        input2.addEventListener('input', handleChange);
+        input2.dataset.listenerAttached = '1';
+      }
+      if (!deleteBtn.dataset.listenerAttached) {
+        deleteBtn.addEventListener('click', () => {
+          row.remove();
+          handleChange();
+        });
+        deleteBtn.dataset.listenerAttached = '1';
+      }
+      row.append(input1, input2, deleteBtn);
+      return row;
+    }
+
+    function handleChange() {
+      calculateSum();
+      saveToLocalStorage();
+      pushHistory();
+    }
+
+    function calculateSum() {
+      let sum = 0;
+      const details = [];
+      const rows = rowsContainer.querySelectorAll('.row');
+      rows.forEach((row, idx) => {
+        const baseVal = parseInt(row.querySelector('.base-input').value, 10);
+        const endVal = parseInt(row.querySelector('.end-input').value, 10);
+        if (!isNaN(baseVal) && !isNaN(endVal) && endVal >= baseVal) {
+          let rowSum = 0;
+          const nums = [];
+          for (let i = baseVal; i <= endVal; i++) {
+            rowSum += i;
+            nums.push(i);
+          }
+          sum += rowSum;
+          const displaySeq = (endVal - baseVal <= 10)
+            ? nums.join(" + ")
+            : `${nums.slice(0,3).join(" + ")} + ... + ${nums.slice(-3).join(" + ")}`;
+          details.push(`Row ${idx + 1}: ${displaySeq} = ${rowSum}`);
+        } else if (!isNaN(baseVal) && !isNaN(endVal)) {
+          details.push(`Row ${idx + 1}: End must be ≥ Base`);
+        } else {
+          details.push(`Row ${idx + 1}: Enter base and end`);
+        }
+      });
+      const totalHTML = details.map(d => `<div>${d}</div>`).join("");
+      resultsBox.innerHTML = `${totalHTML}<hr><div><b>Total Sum: ${sum}</b></div>`;
+    }
+
+    function exportCSV() {
+      const rows = rowsContainer.querySelectorAll('.row');
+      let csvContent = "Row,Base,End,Addends,Sum,Total Sum\n";
+      let totalSum = 0;
+      const data = [];
+      rows.forEach((row, idx) => {
+        const baseVal = parseInt(row.querySelector('.base-input').value, 10);
+        const endVal = parseInt(row.querySelector('.end-input').value, 10);
+        if (!isNaN(baseVal) && !isNaN(endVal) && endVal >= baseVal) {
+          let sum = 0;
+          let numbers = [];
+          for (let i = baseVal; i <= endVal; i++) {
+            sum += i;
+            numbers.push(i);
+          }
+          totalSum += sum;
+          data.push({
+            row: idx + 1,
+            base: baseVal,
+            end: endVal,
+            addends: numbers.join(" + "),
+            sum
+          });
+        }
+      });
+      data.forEach(d => {
+        csvContent += `${d.row},${d.base},${d.end},"${d.addends}",${d.sum}\n`;
+      });
+      csvContent += `,,,,,${totalSum}\n`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'summation_results.csv';
+      link.click();
+    }
+
+    function clearAll() {
+      rowsContainer.innerHTML = '';
+      rowsContainer.appendChild(createRow());
+      resultsBox.innerHTML = '';
+      handleChange();
+    }
+
+    function setUpListeners() {
+      rowsContainer.querySelectorAll('.base-input,.end-input').forEach(input => {
+        if (!input.dataset.listenerAttached) {
+          input.addEventListener('input', handleChange);
+          input.dataset.listenerAttached = '1';
+        }
+      });
+      rowsContainer.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent === 'Delete' && !btn.dataset.listenerAttached) {
+          btn.addEventListener('click', () => {
+            btn.parentElement.remove();
+            handleChange();
+          });
+          btn.dataset.listenerAttached = '1';
+        }
+      });
+    }
+
+    addRowBtn.addEventListener('click', () => {
+      rowsContainer.appendChild(createRow());
+      handleChange();
+    });
+    exportBtn.addEventListener('click', exportCSV);
+    clearBtn.addEventListener('click', clearAll);
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    window.addEventListener('beforeunload', saveToLocalStorage);
+
+    if (!loadFromLocalStorage()) {
+      rowsContainer.appendChild(createRow());
+      calculateSum();
+      saveToLocalStorage();
+    }
+    pushHistory();
+  </script>
+</body>
+</html>
