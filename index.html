@@ -479,14 +479,12 @@
                 printModal.style.display = 'none';
             });
 
-            // Theme
             if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
             toggleThemeButton.addEventListener('click', () => {
                 document.body.classList.toggle('dark-mode');
                 localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
             });
 
-            // Editing operations and improved copy/cut handling
             function getSelectionTextAndRange() {
                 const sel = window.getSelection();
                 if (!sel) return { text: '', range: null, isCollapsed: true };
@@ -494,7 +492,6 @@
             }
 
             function selectAllInContent() {
-                // Select all contents inside the content container
                 const range = document.createRange();
                 range.selectNodeContents(contentContainer);
                 const sel = window.getSelection();
@@ -508,19 +505,15 @@
                 try {
                     if (selText && navigator.clipboard && navigator.clipboard.writeText) {
                         await navigator.clipboard.writeText(selText);
-                        // keep selection
                         showTemporaryMessage('Copied to clipboard');
                         return true;
                     } else {
-                        // If nothing selected, try selecting all first
                         if (!selText) selectAllInContent();
-                        // Fallback to execCommand
                         const successful = document.execCommand('copy');
                         showTemporaryMessage(successful ? 'Copied to clipboard' : 'Unable to copy');
                         return successful;
                     }
                 } catch (err) {
-                    // Fallback to execCommand if Clipboard API failed
                     if (!selText) selectAllInContent();
                     const successful = document.execCommand('copy');
                     showTemporaryMessage(successful ? 'Copied to clipboard' : 'Unable to copy');
@@ -534,7 +527,6 @@
                 try {
                     if (selText && navigator.clipboard && navigator.clipboard.writeText) {
                         await navigator.clipboard.writeText(selText);
-                        // remove the selected content
                         document.execCommand('delete');
                         if (activeTab) {
                             activeTab.content = contentContainer.innerHTML;
@@ -544,7 +536,6 @@
                         showTemporaryMessage('Cut to clipboard');
                         return true;
                     } else {
-                        // If nothing selected, select all then cut
                         if (!selText) selectAllInContent();
                         const successful = document.execCommand('cut');
                         if (successful && activeTab) {
@@ -568,8 +559,7 @@
                 }
             }
 
-            function showTemporaryMessage(msg, duration = 1200) {
-                // small unobtrusive temporary feedback (no alert)
+            function showTemporaryMessage(msg, duration = 1200) {)
                 const el = document.createElement('div');
                 el.textContent = msg;
                 el.style.position = 'fixed';
@@ -584,7 +574,6 @@
                 setTimeout(() => el.remove(), duration);
             }
 
-            // Attach improved click handlers
             copyButton.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 contentContainer.focus();
@@ -623,9 +612,6 @@
                 restoreState(redoStack.pop());
             });
 
-            // Legacy copy/cut code removed in favor of the above functions
-
-            // Dropdown buttons that use document.execCommand
             document.querySelectorAll('.dropdown > button').forEach(button => {
                 button.addEventListener('click', () => {
                     const content = button.nextElementSibling;
@@ -636,11 +622,9 @@
                 });
             });
 
-            // Handle command buttons inside dropdowns (format/insert that set data-cmd)
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.dropdown-content button');
                 if (!btn) return;
-                // If button handled separately (copy/cut/clear/etc) return
                 if (btn.id === 'copy' || btn.id === 'cut' || btn.id === 'clear' || btn.id === 'undo' || btn.id === 'redo') return;
                 const cmd = btn.dataset?.cmd;
                 const val = btn.dataset?.value || null;
@@ -670,7 +654,6 @@
                 contentContainer.focus();
             });
 
-            // Keyboard shortcuts: Ctrl/Cmd + A (select all), C (copy), X (cut)
             document.addEventListener('keydown', async (e) => {
                 const isMac = navigator.platform.toLowerCase().includes('mac');
                 const mod = isMac ? e.metaKey : e.ctrlKey;
@@ -678,11 +661,9 @@
 
                 const key = e.key.toLowerCase();
 
-                // Only act if focus is in the content container (or no focused element)
                 const activeIsInContent = document.activeElement === contentContainer || contentContainer.contains(document.activeElement);
 
                 if (key === 'a') {
-                    // select all within content area
                     if (activeIsInContent) {
                         e.preventDefault();
                         selectAllInContent();
