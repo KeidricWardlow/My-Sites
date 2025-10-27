@@ -153,6 +153,7 @@
                 <button id="redo" data-cmd="redo">Redo</button>
                 <button id="cut" data-cmd="cut">Cut (Ctrl+X)</button>
                 <button id="copy">Copy (Ctrl+C)</button>
+                <button id="paste">Paste (Ctrl+V)</button>
                 <button id="clear">Clear</button>
             </div>
         </div>
@@ -229,6 +230,7 @@
             const redoButton = document.getElementById('redo');
             const cutButton = document.getElementById('cut');
             const copyButton = document.getElementById('copy');
+            const pasteButton = document.getElementById('paste');
             const printTabButton = document.getElementById('print-tab');
             const printAllTabsButton = document.getElementById('print-all-tabs');
             const printSelectedTabsButton = document.getElementById('print-selected-tabs');
@@ -559,7 +561,53 @@
                 }
             }
 
-            function showTemporaryMessage(msg, duration = 1200) {)
+            function insertTextAtRange(text) {
+                const sel = window.getSelection();
+                if (!sel) {
+                    contentContainer.appendChild(document.createTextNode(text));
+                    return;
+                }
+                const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+                if (range) {
+                    range.deleteContents();
+                    const textNode = document.createTextNode(text);
+                    range.insertNode(textNode);
+                    const newRange = document.createRange();
+                    newRange.setStartAfter(textNode);
+                    newRange.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(newRange);
+                } else {
+                    contentContainer.appendChild(document.createTextNode(text));
+                }
+            }
+
+            async function pasteFromClipboard() {
+                try {
+                    if (!activeTab) return;
+                    const text = await navigator.clipboard.readText();
+                    if (text === undefined || text === null) throw new Error('No text');
+                    insertTextAtRange(text);
+                    activeTab.content = contentContainer.innerHTML;
+                    saveTabs();
+                    showTemporaryMessage('Pasted from clipboard');
+                } catch (err) {
+                    try {
+                        const successful = document.execCommand('paste');
+                        if (successful && activeTab) {
+                            activeTab.content = contentContainer.innerHTML;
+                            saveTabs();
+                            showTemporaryMessage('Pasted from clipboard');
+                        } else {
+                            alert('Paste failed. Your browser may block programmatic paste. Use Ctrl+V / Cmd+V to paste.');
+                        }
+                    } catch (err2) {
+                        alert('Paste failed. Your browser may block programmatic paste. Use Ctrl+V / Cmd+V to paste.');
+                    }
+                }
+            }
+
+            function showTemporaryMessage(msg, duration = 1200) {
                 const el = document.createElement('div');
                 el.textContent = msg;
                 el.style.position = 'fixed';
@@ -584,6 +632,14 @@
                 e.stopPropagation();
                 contentContainer.focus();
                 await cutSelection();
+            });
+
+            pasteButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (!activeTab) return;
+                pushToHistory();
+                contentContainer.focus();
+                await pasteFromClipboard();
             });
 
             clearButton.addEventListener('click', () => {
@@ -625,7 +681,7 @@
             document.addEventListener('click', e => {
                 const btn = e.target.closest('.dropdown-content button');
                 if (!btn) return;
-                if (btn.id === 'copy' || btn.id === 'cut' || btn.id === 'clear' || btn.id === 'undo' || btn.id === 'redo') return;
+                if (btn.id === 'copy' || btn.id === 'cut' || btn.id === 'paste' || btn.id === 'clear' || btn.id === 'undo' || btn.id === 'redo') return;
                 const cmd = btn.dataset?.cmd;
                 const val = btn.dataset?.value || null;
                 if (!cmd) return;
@@ -678,6 +734,7 @@
                         e.preventDefault();
                         await cutSelection();
                     }
+                } else if (key === 'v') {
                 }
             });
 
