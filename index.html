@@ -15,7 +15,6 @@
       align-items: center;
       min-height: 100vh;
     }
-
     .container {
       display: flex;
       flex-direction: column;
@@ -24,7 +23,6 @@
       max-width: 800px;
       text-align: center;
     }
-
     .input-area {
       display: flex;
       flex-direction: column;
@@ -32,7 +30,6 @@
       width: 100%;
       gap: 10px;
     }
-
     button {
       padding: 10px 24px;
       background-color: lime;
@@ -42,19 +39,16 @@
       cursor: pointer;
       transition: background 0.3s, color 0.3s;
     }
-
     button:hover {
       background-color: red;
       color: white;
     }
-
     textarea {
       width: 100%;
       font-size: 16px;
       padding: 10px;
       resize: none;
     }
-
     #resultsDiv {
       width: 100%;
       margin-top: 10px;
@@ -64,16 +58,13 @@
       padding: 10px;
       word-wrap: break-word;
     }
-
     .result-block {
       margin-bottom: 10px;
     }
-
     .factor-list {
       display: none;
       margin-top: 5px;
     }
-
     .history-buttons {
       display: flex;
       gap: 10px;
@@ -114,7 +105,7 @@
     let isRestoring = false;
 
     function saveState() {
-      if (isRestoring) return; // prevent double-tap behavior
+      if (isRestoring) return;
       history.push({
         input: inputArea.value,
         results: JSON.stringify(factorResults)
@@ -186,27 +177,22 @@
       factorResults.forEach(item => {
         const block = document.createElement('div');
         block.className = 'result-block';
-
         const summary = document.createElement('p');
         summary.textContent = `Factors of ${item.number}:`;
         block.appendChild(summary);
-
         const toggleBtn = document.createElement('button');
         toggleBtn.textContent = 'Show/Hide';
         toggleBtn.style.marginBottom = '5px';
         block.appendChild(toggleBtn);
-
         const factorList = document.createElement('div');
         factorList.className = 'factor-list';
         factorList.innerHTML = item.factors
           .map(f => `${f} → ${item.number} ÷ ${f} = ${item.number / f}`)
           .join('<br>');
         block.appendChild(factorList);
-
         toggleBtn.addEventListener('click', () => {
           factorList.style.display = factorList.style.display === 'none' ? 'block' : 'none';
         });
-
         resultsDiv.appendChild(block);
       });
     }
@@ -215,7 +201,6 @@
       const lines = inputArea.value.split('\n');
       resultsDiv.innerHTML = '';
       factorResults = [];
-
       lines.forEach((line) => {
         const num = parseInt(line.trim(), 10);
         if (!isNaN(num) && line.trim() !== "") {
@@ -228,7 +213,6 @@
           });
         }
       });
-
       localStorage.setItem('factorInput', inputArea.value);
       localStorage.setItem('factorResults', JSON.stringify(factorResults));
       renderResults();
@@ -240,7 +224,10 @@
       let csvContent = "data:text/csv;charset=utf-8,";
       csvContent += "Number,Factors,Calculations\n";
       factorResults.forEach(item => {
-        csvContent += `"${item.number}","${item.factors.join(', ')}","${item.calculations.join('; ')}"\n`;
+        const num = `'${item.number}`;
+        const factors = item.factors.length > 0 ? `'${item.factors[0]}, ${item.factors.slice(1).join(', ')}` : '';
+        const calculations = item.calculations.length > 0 ? `'${item.calculations[0]}; ${item.calculations.slice(1).join('; ')}` : '';
+        csvContent += `"${num}","${factors}","${calculations}"\n`;
       });
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
