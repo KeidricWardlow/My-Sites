@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Array</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Josefin Sans', sans-serif;
+      background: linear-gradient(to right, gold, red, grey);
+      color: white;
+      padding: 20px;
+    }
+    .center-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+    }
+    #arrayDisplay {
+      margin-top: 20px;
+      max-height: 400px;
+      max-width: 100%;
+      overflow: auto;
+      border: 1px solid white;
+      border-radius: 5px;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: center;
+      background-color: yellow;
+      color: black;
+    }
+    td {
+      min-width: 50px;
+    }
+    button, input {
+      padding: 8px 15px;
+      margin: 5px;
+      border-radius: 5px;
+      font-family: "Josefin Sans", serif;
+      border: none;
+    }
+    button {
+      background-color: cyan;
+      color: black;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: violet;
+    }
+    input[type="number"] {
+      width: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="center-container">
+    <div>
+      Rows: <input type="number" id="rowsInput" min="1">
+      Columns: <input type="number" id="colsInput" min="1">
+    </div>
+    <div id="arrayDisplay"></div>
+    <div>
+      <button id="updateBtn">Update</button>
+      <button id="undoBtn">Undo</button>
+      <button id="redoBtn">Redo</button>
+      <button id="copyButton">Copy</button>
+      <button id="exportBtn">Export XLSX</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script>
+    let array = [];
+    let history = [];
+    let redoStack = [];
+
+    function pushHistory() {
+      const snapshot = {
+        array: JSON.parse(JSON.stringify(array)),
+        rows: array.length,
+        cols: array[0]?.length || 1
+      };
+      history.push(snapshot);
+      redoStack = [];
+    }
+
+    function restoreState(state) {
+      array = JSON.parse(JSON.stringify(state.array));
+      document.getElementById('rowsInput').value = state.rows;
+      document.getElementById('colsInput').value = state.cols;
+      saveArray(false);
+      displayTable();
+    }
+
+    function undo() {
+      if (history.length <= 1) return;
+      const current = {
+        array: JSON.parse(JSON.stringify(array)),
+        rows: array.length,
+        cols: array[0]?.length || 1
+      };
+      redoStack.push(current);
+      history.pop(); // remove current state
+      const prev = history[history.length - 1];
+      restoreState(prev);
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const state = redoStack.pop();
+      pushHistory();
+      restoreState(state);
+    }
+
+    function displayTable() {
+      const arrayDisplay = document.getElementById('arrayDisplay');
+      arrayDisplay.innerHTML = '';
+      const table = document.createElement('table');
+      array.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        row.forEach((cell, j) => {
+          const td = document.createElement('td');
+          td.contentEditable = true;
+          td.textContent = cell;
+          td.addEventListener('input', () => {
+            array[i][j] = td.textContent;
+            saveArray();
+            if (i === array.length - 1) addRow();
+            if (j === array[0].length - 1) addColumn();
+          });
+          td.addEventListener('keydown', e => handleNavigation(e, i, j));
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      arrayDisplay.appendChild(table);
+    }
+
+    function handleNavigation(e, i, j) {
+      let rowCount = array.length,
+          colCount = array[0].length;
+      if (i === rowCount - 1) addRow();
+      if (j === colCount - 1) addColumn();
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'Tab':
+          e.preventDefault();
+          focusCell(i, j + 1);
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          focusCell(i, j - 1);
+          break;
+        case 'ArrowDown':
+        case 'Enter':
+          e.preventDefault();
+          focusCell(i + 1, j);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          focusCell(i - 1, j);
+          break;
+      }
+    }
+
+    function focusCell(i, j) {
+      const table = document.querySelector('table');
+      if (!table) return;
+      while (i >= array.length) addRow();
+      while (j >= array[0].length) addColumn();
+      displayTable();
+      const targetRow = table.rows[i];
+      if (!targetRow) return;
+      const targetCell = targetRow.cells[j];
+      if (!targetCell) return;
+      targetCell.focus();
+      const range = document.createRange();
+      range.selectNodeContents(targetCell);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function addRow() {
+      const rowIndex = array.length;
+      const colCount = array[0]?.length || 1;
+      const newRow = Array.from({ length: colCount }, (_, j) => `${rowIndex},${j}`);
+      array.push(newRow);
+      saveArray();
+      updateInputs();
+    }
+
+    function addColumn() {
+      const rowCount = array.length || 1;
+      for (let i = 0; i < rowCount; i++) {
+        array[i] = array[i] || [];
+        array[i].push(`${i},${array[i].length}`);
+      }
+      saveArray();
+      updateInputs();
+    }
+
+    function saveArray(trackHistory = true) {
+      if (trackHistory) pushHistory();
+      localStorage.setItem('savedArray', JSON.stringify(array));
+      localStorage.setItem('savedRows', array.length);
+      localStorage.setItem('savedCols', array[0]?.length || 1);
+      updateInputs();
+    }
+
+    function updateInputs() {
+      document.getElementById('rowsInput').value = array.length;
+      document.getElementById('colsInput').value = array[0]?.length || 1;
+    }
+
+    function copyToClipboard() {
+      const textarea = document.createElement('textarea');
+      textarea.value = array.map(r => r.join('\t')).join('\n');
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('Copied to clipboard');
+    }
+
+    function resizeArray() {
+      const rowsVal = document.getElementById('rowsInput').value;
+      const colsVal = document.getElementById('colsInput').value;
+      if (rowsVal === '' || colsVal === '') return;
+      const rows = parseInt(rowsVal) || 1;
+      const cols = parseInt(colsVal) || 1;
+      while (array.length < rows) addRow();
+      while (array.length > rows) array.pop();
+      array.forEach((row, i) => {
+        while (row.length < cols) row.push(`${i},${row.length}`);
+        while (row.length > cols) row.pop();
+      });
+      saveArray();
+      displayTable();
+    }
+
+    function exportXLSX() {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(array);
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      ws['!cols'] = Array(range.e.c + 1).fill({ wch: 15 });
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[cell_address]) continue;
+          ws[cell_address].s = {
+            fill: { fgColor: { rgb: "FFFF00" } },
+            font: { bold: R === 0, color: { rgb: "000000" } },
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
+            }
+          };
+        }
+      }
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+      XLSX.writeFile(wb, "array.xlsx");
+    }
+
+    window.onload = function() {
+      const savedArray = JSON.parse(localStorage.getItem('savedArray'));
+      const savedRows = parseInt(localStorage.getItem('savedRows'));
+      const savedCols = parseInt(localStorage.getItem('savedCols'));
+      if (savedArray && savedArray.length > 0) {
+        array = savedArray;
+        document.getElementById('rowsInput').value = savedRows || array.length;
+        document.getElementById('colsInput').value = savedCols || array[0]?.length || 1;
+      } else {
+        const initialRows = parseInt(document.getElementById('rowsInput').value) || 1;
+        const initialCols = parseInt(document.getElementById('colsInput').value) || 1;
+        array = Array.from({ length: initialRows }, (_, i) =>
+          Array.from({ length: initialCols }, (_, j) => `${i},${j}`)
+        );
+      }
+      pushHistory();
+      displayTable();
+    };
+
+    document.getElementById('copyButton').addEventListener('click', copyToClipboard);
+    document.getElementById('exportBtn').addEventListener('click', exportXLSX);
+    document.getElementById('updateBtn').addEventListener('click', resizeArray);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+  </script>
+</body>
+</html>
