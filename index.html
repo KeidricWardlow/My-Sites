@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Intervals</title>
+        <style>
+            html {
+                min-height: 100vh;
+                background: linear-gradient(135deg, salmon, black, gold, cyan);
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 16px;
+            }
+
+            .container {
+                display: flex;
+                flex-direction: row;
+                gap: 32px;
+                background: rgba(0, 0, 0, 0.1);
+                padding: 32px;
+                border-radius: 24px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                flex-wrap: wrap;
+                max-width: 100%;
+            }
+
+            .pad {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                max-width: 320px;
+            }
+
+            textarea,
+            .output {
+                width: 100%;
+                height: 400px;
+                resize: none;
+                border-radius: 10px;
+                border: 1px solid black;
+                font-size: 15px;
+                margin-bottom: 14px;
+                padding: 10px;
+                background-color: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            textarea:disabled,
+            .output {
+                background-color: lightgrey;
+                color: black;
+                border-style: dashed;
+                cursor: default;
+                user-select: text;
+            }
+
+            .output {
+                white-space: pre-wrap;
+                pointer-events: none;
+                overflow-y: auto;
+            }
+
+            label,
+            input[type="file"] {
+                font-size: 1em;
+                margin-bottom: 8px;
+            }
+
+            button {
+                padding: 6px 18px;
+                border: none;
+                border-radius: 8px;
+                background: gold;
+                color: black;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.13);
+            }
+
+            button:hover {
+                background: cyan;
+                color: black;
+            }
+
+            .button-row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            @media(max-width:768px) {
+                .container {
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 16px;
+                    gap: 24px;
+                }
+
+                .pad {
+                    max-width: 100%;
+                }
+
+                textarea,
+                .output {
+                    height: 300px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="pad">
+                <input type="file" id="fileInput" accept=".txt">
+                <textarea id="inputPad" spellcheck="false" autocomplete="off" autofocus></textarea>
+                <div class="button-row">
+                    <button id="undoBtn">Undo</button>
+                    <button id="redoBtn">Redo</button>
+                    <button id="clearBtn">Clear</button>
+                    <button id="exportBtn">Export CSV</button>
+                </div>
+            </div>
+            <div class="pad">
+                <div class="output" id="outputPad"></div>
+            </div>
+        </div>
+        <script>
+            const inputPad = document.getElementById('inputPad');
+            const outputPad = document.getElementById('outputPad');
+            const fileInput = document.getElementById('fileInput');
+            const clearBtn = document.getElementById('clearBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            const STORAGE_KEY = 'intervalNotepadData';
+            let history = [];
+            let redoStack = [];
+
+            function saveState() {
+                history.push(inputPad.value);
+                if (history.length > 200) history.shift();
+                redoStack = [];
+            }
+
+            function undo() {
+                if (history.length > 1) {
+                    redoStack.push(history.pop());
+                    inputPad.value = history[history.length - 1] || '';
+                    localStorage.setItem(STORAGE_KEY, inputPad.value);
+                    updateOutput();
+                }
+            }
+
+            function redo() {
+                if (redoStack.length > 0) {
+                    const next = redoStack.pop();
+                    history.push(next);
+                    inputPad.value = next;
+                    localStorage.setItem(STORAGE_KEY, inputPad.value);
+                    updateOutput();
+                }
+            }
+            inputPad.value = localStorage.getItem(STORAGE_KEY) || '';
+            history.push(inputPad.value);
+            inputPad.addEventListener('input', () => {
+                saveState();
+                localStorage.setItem(STORAGE_KEY, inputPad.value);
+                updateOutput();
+            });
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.txt')) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        inputPad.value = evt.target.result;
+                        saveState();
+                        localStorage.setItem(STORAGE_KEY, inputPad.value);
+                        updateOutput();
+                    };
+                    reader.readAsText(file);
+                }
+                fileInput.value = '';
+            });
+            clearBtn.addEventListener('click', () => {
+                inputPad.value = '';
+                saveState();
+                localStorage.removeItem(STORAGE_KEY);
+                updateOutput();
+            });
+            exportBtn.addEventListener('click', () => {
+                let inputLines = inputPad.value.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+                let outputLines = outputPad.textContent.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+                let csvRows = [`"Input","Output"`];
+                for (let i = 0; i < inputLines.length; i++) {
+                    let input = inputLines[i] || '';
+                    let output = '';
+                    if (i > 0) {
+                        output = outputLines[i - 1] || '';
+                    }
+                    csvRows.push(`"${input.replace(/"/g,'""')}","${output.replace(/"/g,'""')}"`);
+                }
+                let csvContent = csvRows.join('\n');
+                let blob = new Blob([csvContent], {
+                    type: 'text/csv;charset=utf-8;'
+                });
+                let now = new Date();
+                let yyyy = now.getFullYear();
+                let mm = String(now.getMonth() + 1).padStart(2, '0');
+                let dd = String(now.getDate()).padStart(2, '0');
+                let hh = String(now.getHours()).padStart(2, '0');
+                let min = String(now.getMinutes()).padStart(2, '0');
+                let ss = String(now.getSeconds()).padStart(2, '0');
+                let filename = `intervals-${yyyy}-${mm}-${dd}-${hh}-${min}-${ss}.csv`;
+                let url = URL.createObjectURL(blob);
+                let link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.click();
+            });
+
+            function updateOutput() {
+                let raw = inputPad.value;
+                let nums = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0).map(Number).filter(x => !isNaN(x));
+                let outLines = [];
+                if (nums.length >= 2) {
+                    outLines.push('');
+                    for (let i = 1; i < nums.length; i++) {
+                        let prev = nums[i - 1],
+                            curr = nums[i];
+                        if (curr === 0 || prev === 0) {
+                            let diff = curr - prev;
+                            outLines.push(diff >= 0 ? `+${diff}` : `${diff}`);
+                        } else {
+                            let exp = Math.log(curr) / Math.log(prev);
+                            if (Number.isInteger(exp) && exp > 1) {
+                                outLines.push(`^${exp}`);
+                            } else {
+                                let expBack = Math.log(prev) / Math.log(curr);
+                                if (Number.isInteger(expBack) && expBack > 1) {
+                                    outLines.push(`^1/${expBack}`);
+                                } else if (curr % prev === 0) {
+                                    outLines.push(`*${curr/prev}`);
+                                } else if (prev % curr === 0) {
+                                    outLines.push(`/${prev/curr}`);
+                                } else {
+                                    let diff = curr - prev;
+                                    outLines.push(diff >= 0 ? `+${diff}` : `${diff}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                outputPad.textContent = outLines.join('\n');
+            }
+            updateOutput();
+        </script>
+    </body>
+</html>
