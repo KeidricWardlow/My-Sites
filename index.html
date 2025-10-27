@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Dictation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amaranth&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      overflow: hidden;
+      background: moccasin;
+      font-family: 'Amaranth', sans-serif;
+    }
+    .main-wrapper {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      height: 100%; width: 100%; overflow: hidden;
+    }
+    .top-controls {
+      position: fixed; top: 0; left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid black;
+      border-bottom-width: 3px;
+      width: 100%; max-width: 800px;
+      padding: 10px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      z-index: 10;
+    }
+    .controls {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 10px;
+    }
+    .input-wrapper {
+      display: flex; flex-direction: column;
+      align-items: center; position: relative;
+    }
+    .square-input {
+      width: 40px; height: 40px;
+      text-align: center; font-size: 18px;
+      border: 2px solid black; border-radius: 5px;
+    }
+    .delete-btn {
+      position: absolute; top: -8px; right: -8px;
+      background: black; color: white;
+      border: none; border-radius: 50%;
+      width: 18px; height: 18px; font-size: 12px;
+      line-height: 16px; cursor: pointer; padding: 0;
+    }
+    select, button {
+      font-family: 'Amaranth', sans-serif;
+      padding: 8px; border: 2px solid black;
+      border-radius: 5px; background: moccasin;
+      cursor: pointer;
+    }
+    button:hover, .dropdown-content button:hover {
+      background: black; color: moccasin;
+    }
+    .dropdown {
+      position: relative; display: inline-block;
+    }
+    .dropdown-content {
+      display: none; position: absolute;
+      background-color: white;
+      border: 2px solid black;
+      min-width: 160px; z-index: 20;
+      border-radius: 5px;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .dropdown-content button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-bottom: 1px solid black;
+      background: moccasin;
+      padding: 8px;
+    }
+    .dropdown-content button:last-child {
+      border-bottom: none;
+    }
+    .dropdown.show .dropdown-content {
+      display: flex;
+    }
+    .container {
+      border: 3px solid black;
+      background: white;
+      width: 90%; max-width: 900px;
+      margin-top: 150px;
+      height: calc(100vh - 170px);
+      display: flex; flex-direction: column;
+      justify-content: flex-start; align-items: stretch;
+      overflow: hidden; border-radius: 5px;
+      padding: 10px; box-sizing: border-box;
+    }
+    .text-sections {
+      display: flex; flex-direction: row;
+      justify-content: space-between; align-items: stretch;
+      flex: 1; gap: 10px; overflow: hidden;
+    }
+    textarea, #output {
+      width: 50%; border: 2px solid black;
+      padding: 10px; font-family: 'Amaranth', sans-serif;
+      font-size: 16px; overflow-y: auto;
+      resize: none; border-radius: 5px;
+      background: #fffefc; height: 100%;
+    }
+    #output {
+      background: #fafafa; white-space: pre-wrap;
+    }
+    #wordCountOutput {
+      margin-top: 10px; flex: 0 0 auto;
+      border: 2px solid black; padding: 10px;
+      background: #f7f2e6; overflow-y: auto;
+      border-radius: 5px; max-height: 30%;
+    }
+    .highlighted { background: indigo; color: lime; }
+    details {
+      border: 1px solid black; border-radius: 5px;
+      margin-top: 5px; padding: 5px;
+      background: #f7e6be; overflow: auto;
+    }
+    summary { cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="top-controls">
+      <div class="controls">
+        <input type="file" id="fileInput">
+        <select id="mode">
+          <option value="beginning">Beginning</option>
+          <option value="ending">Ending</option>
+        </select>
+
+        <div class="dropdown" id="editDropdown">
+          <button id="editBtn">Edit ▼</button>
+          <div class="dropdown-content" id="editMenu">
+            <button id="addBox">Add New Box</button>
+            <button id="removeAllBoxes">Remove All Boxes</button>
+            <button id="clearAll">Clear All</button>
+            <button id="undo">Undo</button>
+            <button id="redo">Redo</button>
+          </div>
+        </div>
+      </div>
+      <div id="inputBoxes" class="controls"></div>
+    </div>
+
+    <div class="container">
+      <div class="text-sections">
+        <textarea id="textArea" placeholder="Type or paste your text here..."></textarea>
+        <div id="output"></div>
+      </div>
+      <div id="wordCountOutput"></div>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const addBoxBtn = document.getElementById('addBox');
+    const clearBtn = document.getElementById('clearAll');
+    const removeAllBtn = document.getElementById('removeAllBoxes');
+    const undoBtn = document.getElementById('undo');
+    const redoBtn = document.getElementById('redo');
+    const inputContainer = document.getElementById('inputBoxes');
+    const textArea = document.getElementById('textArea');
+    const output = document.getElementById('output');
+    const wordCountOutput = document.getElementById('wordCountOutput');
+    const modeSelect = document.getElementById('mode');
+    const dropdown = document.getElementById('editDropdown');
+    const editBtn = document.getElementById('editBtn');
+    let undoStack = [], redoStack = [];
+
+    // Dropdown toggle and auto-collapse
+    editBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+    });
+    document.addEventListener('click', e => {
+      if (!dropdown.contains(e.target)) dropdown.classList.remove('show');
+    });
+    document.querySelectorAll('#editMenu button').forEach(btn => {
+      btn.addEventListener('click', () => dropdown.classList.remove('show'));
+    });
+
+    function saveState() {
+      const state = {
+        text: textArea.value,
+        letters: [...inputContainer.querySelectorAll('.square-input')].map(i => i.value),
+        mode: modeSelect.value
+      };
+      undoStack.push(JSON.stringify(state));
+      if (undoStack.length > 50) undoStack.shift();
+      redoStack = [];
+    }
+
+    function restoreState(stateJSON) {
+      const state = JSON.parse(stateJSON);
+      textArea.value = state.text;
+      inputContainer.innerHTML = '';
+      state.letters.forEach(l => createInput(l));
+      modeSelect.value = state.mode;
+      saveAll();
+      highlightText();
+    }
+
+    undoBtn.addEventListener('click', () => {
+      if (undoStack.length > 1) {
+        redoStack.push(undoStack.pop());
+        restoreState(undoStack[undoStack.length - 1]);
+      }
+    });
+    redoBtn.addEventListener('click', () => {
+      if (redoStack.length > 0) {
+        const state = redoStack.pop();
+        undoStack.push(state);
+        restoreState(state);
+      }
+    });
+
+    window.onload = () => {
+      const savedText = localStorage.getItem('textArea');
+      const savedMode = localStorage.getItem('mode');
+      const savedLetters = JSON.parse(localStorage.getItem('letters')) || [];
+      if (savedText) textArea.value = savedText;
+      if (savedMode) modeSelect.value = savedMode;
+      if (savedLetters.length === 0) createInput();
+      savedLetters.forEach(letter => createInput(letter));
+      highlightText();
+      saveState();
+    };
+
+    function createInput(value = '') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'input-wrapper';
+      const input = document.createElement('input');
+      input.type = 'text'; input.maxLength = 1;
+      input.className = 'square-input';
+      input.value = value;
+      const del = document.createElement('button');
+      del.textContent = '×'; del.className = 'delete-btn';
+      del.onclick = () => { wrapper.remove(); saveAll(); highlightText(); saveState(); };
+      input.addEventListener('input', () => { saveAll(); highlightText(); saveState(); });
+      wrapper.appendChild(input); wrapper.appendChild(del);
+      inputContainer.appendChild(wrapper);
+    }
+
+    addBoxBtn.addEventListener('click', () => { createInput(); saveAll(); highlightText(); saveState(); });
+    removeAllBtn.addEventListener('click', () => {
+      inputContainer.innerHTML = ''; createInput(); saveAll(); highlightText(); saveState();
+    });
+    clearBtn.addEventListener('click', () => {
+      textArea.value = ''; output.innerHTML = ''; wordCountOutput.innerHTML = '';
+      localStorage.clear(); inputContainer.innerHTML = ''; createInput(); saveState();
+    });
+
+    fileInput.addEventListener('change', function() {
+      const file = this.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => { textArea.value = e.target.result; saveAll(); highlightText(); saveState(); };
+      reader.readAsText(file);
+    });
+
+    textArea.addEventListener('input', () => { saveAll(); highlightText(); saveState(); });
+    modeSelect.addEventListener('change', () => { saveAll(); highlightText(); saveState(); });
+
+    function highlightText() {
+      const mode = modeSelect.value;
+      const letters = [...inputContainer.querySelectorAll('.square-input')]
+        .map(i => i.value.toLowerCase()).filter(Boolean);
+      const text = textArea.value;
+      if (!text || letters.length === 0) { output.innerHTML = text; wordCountOutput.innerHTML = ''; return; }
+      const words = text.split(/\b/);
+      const highlighted = words.map(word => {
+        const lowerWord = word.toLowerCase();
+        if (letters.some(l => (mode === 'beginning' && lowerWord.startsWith(l)) ||
+                              (mode === 'ending' && lowerWord.endsWith(l)))) {
+          return `<span class="highlighted">${word}</span>`;
+        }
+        return word;
+      }).join('');
+      output.innerHTML = highlighted;
+      generateWordCounts(letters, text, mode);
+    }
+
+    function generateWordCounts(letters, text, mode) {
+      const words = text.toLowerCase().match(/\b[a-z']+\b/g) || [];
+      let results = {};
+      letters.forEach(l => {
+        const filtered = words.filter(w => (mode === 'beginning' && w.startsWith(l)) ||
+                                           (mode === 'ending' && w.endsWith(l)));
+        const counts = {};
+        filtered.forEach(w => counts[w] = (counts[w] || 0) + 1);
+        const sorted = Object.entries(counts).sort(([a],[b]) => a.localeCompare(b));
+        results[l] = sorted;
+      });
+      let html = '';
+      for (const [letter, list] of Object.entries(results)) {
+        html += `<details><summary>Letter "${letter}" (${list.length} unique)</summary>`;
+        if (list.length === 0) html += `<p>No matches</p>`;
+        else list.forEach(([word, count]) => html += `<div>${word}: ${count}</div>`);
+        html += `</details>`;
+      }
+      wordCountOutput.innerHTML = html;
+    }
+
+    function saveAll() {
+      const letters = [...inputContainer.querySelectorAll('.square-input')].map(i => i.value);
+      localStorage.setItem('letters', JSON.stringify(letters));
+      localStorage.setItem('textArea', textArea.value);
+      localStorage.setItem('mode', modeSelect.value);
+    }
+  </script>
+</body>
+</html>
