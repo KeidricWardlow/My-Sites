@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Order Of Operations</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"></script>
+        <style>
+            body {
+                font-family: 'Indie Flower', cursive;
+                background-color: fuchsia;
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .wrapper {
+                text-align: center;
+            }
+
+            input,
+            select,
+            button {
+                font-family: inherit;
+                font-size: 18px;
+                margin: 5px;
+                padding: 5px;
+                border-radius: 10px;
+                border: none;
+            }
+
+            button {
+                cursor: pointer;
+                background: white;
+            }
+
+            button:hover {
+                background-color: cyan;
+            }
+
+            .container {
+                display: inline-block;
+                text-align: left;
+            }
+
+            .line {
+                display: flex;
+                align-items: center;
+                margin-bottom: 5px;
+                justify-content: center;
+            }
+
+            .line select {
+                width: 60px;
+            }
+
+            .line input {
+                width: 80px;
+                text-align: center;
+            }
+
+            .result {
+                font-size: 22px;
+                margin-top: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+            <input type="number" id="firstValue" placeholder="Enter number">
+            <br>
+            <button id="addBtn">Add Line</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+            <div class="container" id="lines"></div>
+            <br>
+            <button id="clearBtn">Clear All</button>
+            <button id="exportBtn">Export CSV</button>
+            <div class="result" id="result"></div>
+        </div>
+        <script>
+            let lines = [];
+            let history = [];
+            let redoStack = [];
+
+            function getCurrentStateObj() {
+                return {
+                    firstValue: document.getElementById('firstValue').value || '',
+                    lines: lines.map(line => ({
+                        operator: line.querySelector('select').value,
+                        value: line.querySelector('input').value || ''
+                    })),
+                    result: document.getElementById('result').textContent || ''
+                };
+            }
+
+            function pushHistory() {
+                const stateStr = JSON.stringify(getCurrentStateObj());
+                if (history.length === 0 || history[history.length - 1] !== stateStr) {
+                    history.push(stateStr);
+                    if (history.length > 200) history.shift();
+                }
+                localStorage.setItem('mixedOpsState', stateStr);
+                redoStack = [];
+                updateUndoRedoButtons();
+            }
+
+            function restoreState(stateStr) {
+                if (!stateStr) return;
+                const data = JSON.parse(stateStr);
+                document.getElementById('firstValue').value = data.firstValue || '';
+                const container = document.getElementById('lines');
+                container.innerHTML = '';
+                lines = [];
+                (data.lines || []).forEach(item => {
+                    const line = createLine(item.operator, item.value, false);
+                    container.appendChild(line);
+                    lines.push(line);
+                });
+                document.getElementById('result').textContent = data.result || '';
+                evaluateExpression();
+                updateUndoRedoButtons();
+            }
+
+            function createLine(operatorValue = '*', inputValue = '', shouldPushHistory = true) {
+                const line = document.createElement('div');
+                line.className = 'line';
+                const operator = document.createElement('select');
+                ['*', '/', '+', '-'].forEach(op => {
+                    const o = document.createElement('option');
+                    o.value = op;
+                    o.textContent = op;
+                    if (op === operatorValue) o.selected = true;
+                    operator.appendChild(o);
+                });
+                const num = document.createElement('input');
+                num.type = 'number';
+                num.placeholder = 'Value';
+                num.value = inputValue;
+                const remove = document.createElement('button');
+                remove.textContent = 'X';
+                operator.addEventListener('change', () => {
+                    evaluateExpression();
+                    if (shouldPushHistory) pushHistory();
+                });
+                num.addEventListener('input', () => {
+                    evaluateExpression();
+                    if (shouldPushHistory) pushHistory();
+                });
+                remove.addEventListener('click', () => {
+                    const parent = document.getElementById('lines');
+                    parent.removeChild(line);
+                    lines = lines.filter(l => l !== line);
+                    evaluateExpression();
+                    if (shouldPushHistory) {
+                        pushHistory();
+                        updateUndoRedoButtons();
+                    }
+                });
+                line.appendChild(operator);
+                line.appendChild(num);
+                line.appendChild(remove);
+                return line;
+            }
+
+            function evaluateExpression() {
+                const firstValue = document.getElementById('firstValue').value;
+                if (firstValue === '') {
+                    document.getElementById('result').textContent = '';
+                    return {
+                        expression: '',
+                        result: ''
+                    };
+                }
+                let expression = firstValue;
+                lines.forEach(line => {
+                    const op = line.querySelector('select').value;
+                    const val = line.querySelector('input').value;
+                    if (val !== '') expression += op + val;
+                });
+                try {
+                    const res = math.evaluate(expression);
+                    const text = `${expression} = ${res}`;
+                    document.getElementById('result').textContent = text;
+                    return {
+                        expression,
+                        result: res
+                    };
+                } catch (e) {
+                    document.getElementById('result').textContent = 'Error in expression';
+                    return {
+                        expression,
+                        result: 'Error'
+                    };
+                }
+            }
+
+            function addLine() {
+                const container = document.getElementById('lines');
+                const line = createLine('*', '', true);
+                container.appendChild(line);
+                lines.push(line);
+                evaluateExpression();
+                pushHistory();
+            }
+
+            function undo() {
+                if (history.length <= 1) return;
+                const current = history.pop();
+                redoStack.push(current);
+                const prev = history[history.length - 1];
+                restoreState(prev);
+            }
+
+            function redo() {
+                if (redoStack.length === 0) return;
+                const state = redoStack.pop();
+                history.push(state);
+                restoreState(state);
+                localStorage.setItem('mixedOpsState', state);
+                updateUndoRedoButtons();
+            }
+
+            function clearAll() {
+                document.getElementById('firstValue').value = '';
+                document.getElementById('lines').innerHTML = '';
+                lines = [];
+                document.getElementById('result').textContent = '';
+                evaluateExpression();
+                pushHistory();
+                updateUndoRedoButtons();
+            }
+
+            function exportCSV() {
+                const {
+                    expression,
+                    result
+                } = evaluateExpression();
+                if (!expression) return;
+                const csv = `Expression,Result\n"${expression}","${result}"`;
+                const blob = new Blob([csv], {
+                    type: 'text/csv'
+                });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'mixed_operations.csv';
+                link.click();
+            }
+
+            function updateUndoRedoButtons() {
+                document.getElementById('undoBtn').disabled = history.length <= 1;
+                document.getElementById('redoBtn').disabled = redoStack.length === 0;
+            }
+            document.getElementById('addBtn').addEventListener('click', addLine);
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            document.getElementById('exportBtn').addEventListener('click', exportCSV);
+            document.getElementById('firstValue').addEventListener('input', () => {
+                evaluateExpression();
+                pushHistory();
+            });
+            window.addEventListener('load', () => {
+                const saved = localStorage.getItem('mixedOpsState');
+                if (saved) {
+                    restoreState(saved);
+                    history = [saved];
+                } else {
+                    evaluateExpression();
+                    pushHistory();
+                }
+                updateUndoRedoButtons();
+            });
+        </script>
+    </body>
+</html>
