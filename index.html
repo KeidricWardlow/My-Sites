@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Text Lookup</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400&display=swap" rel="stylesheet">
+        <style>
+            body {
+                background-color: lightgreen;
+                font-family: 'Inconsolata', monospace;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 20px;
+                min-height: 100vh;
+                box-sizing: border-box;
+                text-align: center;
+            }
+
+            .upload-container {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-bottom: 15px;
+            }
+
+            .custom-upload {
+                position: relative;
+                overflow: hidden;
+                display: inline-block;
+            }
+
+            .custom-upload input[type="file"] {
+                position: absolute;
+                left: 0;
+                top: 0;
+                opacity: 0;
+                cursor: pointer;
+                width: 100%;
+                height: 100%;
+            }
+
+            .upload-btn,
+            .clear-btn,
+            .undo-btn,
+            .redo-btn,
+            .clear-local-btn {
+                padding: 10px 20px;
+                border: 1px solid black;
+                background-color: white;
+                cursor: pointer;
+                font-size: 16px;
+                transition: background 0.3s, color 0.3s;
+            }
+
+            .upload-btn:hover {
+                background-color: lightblue;
+            }
+
+            .clear-btn:hover {
+                background-color: crimson;
+                color: white;
+            }
+
+            .undo-btn:hover {
+                background-color: yellow;
+            }
+
+            .redo-btn:hover {
+                background-color: springgreen;
+            }
+
+            .clear-local-btn:hover {
+                background-color: crimson;
+                color: white;
+            }
+
+            .container {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                width: 100%;
+                max-width: 900px;
+                flex-wrap: wrap;
+            }
+
+            .text-area-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-width: 280px;
+                align-items: stretch;
+            }
+
+            .editor-row {
+                display: flex;
+                width: 100%;
+                gap: 6px;
+                align-items: stretch;
+            }
+
+            .gutter {
+                width: 48px;
+                min-width: 36px;
+                max-width: 80px;
+                padding: 10px 6px;
+                border: 1px solid black;
+                background: #f0f0f0;
+                color: #333;
+                height: 300px;
+                resize: none;
+                overflow: auto;
+                text-align: right;
+                font-size: 14px;
+                line-height: 1.35;
+                box-sizing: border-box;
+                white-space: pre;
+            }
+
+            .text-area {
+                flex: 1;
+                height: 300px;
+                padding: 10px;
+                border: 1px solid black;
+                background-color: white;
+                resize: none;
+                font-size: 16px;
+                line-height: 1.35;
+                box-sizing: border-box;
+            }
+
+            .local-btn-group {
+                margin-top: 10px;
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .highlight {
+                background-color: cyan;
+                display: inline-block;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+
+            .missing {
+                background-color: magenta;
+                display: inline-block;
+                padding: 2px 4px;
+                border-radius: 3px;
+                color: black;
+            }
+
+            .word-block {
+                display: inline-block;
+                margin: 4px 6px;
+                text-align: center;
+                vertical-align: top;
+            }
+
+            .word-block .line-num {
+                display: block;
+                font-size: 12px;
+                color: #222;
+                margin-top: 3px;
+            }
+
+            .results-container {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 20px;
+                width: 100%;
+                max-width: 900px;
+                flex-wrap: wrap;
+            }
+
+            .results-box {
+                flex: 1;
+                min-width: 280px;
+                height: 180px;
+                padding: 10px;
+                border: 1px solid black;
+                background-color: white;
+                overflow: auto;
+                font-size: 14px;
+                text-align: left;
+            }
+
+            .btn-group {
+                margin-top: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            @media (max-width: 600px) {
+                body {
+                    justify-content: center;
+                }
+
+                .container,
+                .results-container {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .text-area-wrapper,
+                .results-box {
+                    max-width: 90%;
+                }
+
+                .upload-container {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .upload-btn,
+                .clear-btn,
+                .undo-btn,
+                .redo-btn,
+                .clear-local-btn {
+                    font-size: 14px;
+                    padding: 8px 15px;
+                }
+
+                .gutter {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="upload-container">
+            <label class="custom-upload">
+                <span class="upload-btn">Choose File</span>
+                <input type="file" accept=".txt" class="upload-button" />
+            </label>
+            <label class="custom-upload">
+                <span class="upload-btn">Choose File</span>
+                <input type="file" accept=".txt" class="upload-button" />
+            </label>
+        </div>
+        <div class="container">
+            <div class="text-area-wrapper">
+                <div class="editor-row">
+                    <textarea id="lines1" class="gutter" aria-hidden="true" readonly></textarea>
+                    <textarea id="text1" class="text-area" placeholder="Enter first text..."></textarea>
+                </div>
+                <div class="local-btn-group">
+                    <button class="clear-local-btn" id="clear1Btn" aria-label="Clear first text">Clear Text 1</button>
+                </div>
+            </div>
+            <div class="text-area-wrapper">
+                <div class="editor-row">
+                    <textarea id="lines2" class="gutter" aria-hidden="true" readonly></textarea>
+                    <textarea id="text2" class="text-area" placeholder="Enter second text..."></textarea>
+                </div>
+                <div class="local-btn-group">
+                    <button class="clear-local-btn" id="clear2Btn" aria-label="Clear second text">Clear Text 2</button>
+                </div>
+            </div>
+        </div>
+        <div class="results-container">
+            <div id="highlightedOutput" class="results-box">
+                <strong>Highlighted Words:</strong>
+                <div id="highlightedResult"></div>
+            </div>
+            <div id="missingOutput" class="results-box">
+                <strong>Missing Words:</strong>
+                <div id="missingResult"></div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="undo-btn" id="undoBtn">Undo</button>
+            <button class="redo-btn" id="redoBtn">Redo</button>
+            <button class="clear-btn" id="clearBtn">Clear</button>
+        </div>
+        <script>
+            const text1 = document.getElementById('text1');
+            const text2 = document.getElementById('text2');
+            const lines1 = document.getElementById('lines1');
+            const lines2 = document.getElementById('lines2');
+            const highlightedResultDiv = document.getElementById('highlightedResult');
+            const missingResultDiv = document.getElementById('missingResult');
+            const clearBtn = document.getElementById('clearBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            const fileInputs = document.querySelectorAll('.upload-button');
+            const clear1Btn = document.getElementById('clear1Btn');
+            const clear2Btn = document.getElementById('clear2Btn');
+            let history = [];
+            let redoStack = [];
+
+            function saveToStorage() {
+                localStorage.setItem('text1', text1.value);
+                localStorage.setItem('text2', text2.value);
+                localStorage.setItem('highlightedHTML', highlightedResultDiv.innerHTML);
+                localStorage.setItem('missingHTML', missingResultDiv.innerHTML);
+            }
+
+            function pushHistory() {
+                const current = {
+                    text1: text1.value,
+                    text2: text2.value,
+                    highlightedHTML: highlightedResultDiv.innerHTML,
+                    missingHTML: missingResultDiv.innerHTML
+                };
+                if (history.length === 0 || history[history.length - 1].text1 !== current.text1 || history[history.length - 1].text2 !== current.text2 || history[history.length - 1].highlightedHTML !== current.highlightedHTML || history[history.length - 1].missingHTML !== current.missingHTML) {
+                    history.push(current);
+                    if (history.length > 100) history.shift();
+                    redoStack = [];
+                }
+            }
+
+            function escapeHtml(str) {
+                return String(str).replace(/&/g, '&amp;').replace(/ < /g,'&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                }
+
+                function updateLineNumbersFor(textarea, gutter) {
+                    const text = textarea.value || '';
+                    const lines = text.split(/\r?\n/);
+                    const count = Math.max(1, lines.length);
+                    let numbers = '';
+                    for (let i = 1; i <= count; i++) {
+                        numbers += i + (i < count ? '\n' : '');
+                    }
+                    gutter.value = numbers;
+                    gutter.scrollTop = textarea.scrollTop;
+                }
+
+                function findLineNumberForWord(word, text) {
+                    const lines = (text || '').split(/\r?\n/);
+                    for (let i = 0; i < lines.length; i++) {
+                        const tokens = lines[i].split(/\s+/).filter(Boolean);
+                        for (let t of tokens) {
+                            if (t === word) return i + 1;
+                        }
+                    }
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].includes(word)) return i + 1;
+                    }
+                    return '?';
+                }
+
+                function highlightDifferences() {
+                    const input1 = text1.value.split(/\s+/).filter(Boolean);
+                    const input2 = text2.value.split(/\s+/).filter(Boolean);
+                    let highlightedWordsHTML = '';
+                    let missingWordsHTML = '';
+                    const highlightedSet = new Set();
+                    input1.forEach(word => {
+                        if (input2.includes(word) && !highlightedSet.has(word)) {
+                            const lineNum = findLineNumberForWord(word, text1.value);
+                            highlightedWordsHTML += `
+			<div class="word-block">
+				<span class="highlight">${escapeHtml(word)}</span>
+				<span class="line-num">(${lineNum})</span>
+			</div>`;
+                            highlightedSet.add(word);
+                        } else if (!input2.includes(word)) {
+                            const lineNum = findLineNumberForWord(word, text1.value);
+                            missingWordsHTML += `
+			<div class="word-block">
+				<span class="missing">${escapeHtml(word)}</span>
+				<span class="line-num">(${lineNum})</span>
+			</div>`;
+                        }
+                    });
+                    input2.forEach(word => {
+                        if (!input1.includes(word) && !highlightedSet.has(word)) {
+                            const lineNum = findLineNumberForWord(word, text2.value);
+                            missingWordsHTML += `
+			<div class="word-block">
+				<span class="missing">${escapeHtml(word)}</span>
+				<span class="line-num">(${lineNum})</span>
+			</div>`;
+                        }
+                    });
+                    highlightedResultDiv.innerHTML = highlightedWordsHTML;
+                    missingResultDiv.innerHTML = missingWordsHTML;
+                }
+
+                function readFile(input, textarea, gutter) {
+                    if (input.files && input.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            textarea.value = e.target.result;
+                            updateLineNumbersFor(textarea, gutter);
+                            highlightDifferences();
+                            pushHistory();
+                            saveToStorage();
+                        };
+                        reader.readAsText(input.files[0]);
+                    }
+                }
+                if (fileInputs.length >= 2) {
+                    fileInputs[0].addEventListener('change', () => readFile(fileInputs[0], text1, lines1));
+                    fileInputs[1].addEventListener('change', () => readFile(fileInputs[1], text2, lines2));
+                } else {
+                    fileInputs.forEach((inp, idx) => {
+                        inp.addEventListener('change', () => readFile(inp, idx === 0 ? text1 : text2, idx === 0 ? lines1 : lines2));
+                    });
+                }
+                [text1, text2].forEach((el, idx) => {
+                    const gutter = idx === 0 ? lines1 : lines2;
+                    el.addEventListener('scroll', () => {
+                        gutter.scrollTop = el.scrollTop;
+                    });
+                    gutter.addEventListener('click', (ev) => {
+                        const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 18;
+                        const clickY = ev.offsetY;
+                        const clickedLine = Math.floor(clickY / lineHeight);
+                        const lines = (el.value || '').split(/\r?\n/);
+                        let pos = 0;
+                        for (let i = 0; i < Math.min(clickedLine, lines.length - 1); i++) {
+                            pos += lines[i].length + 1;
+                        }
+                        el.focus();
+                        el.setSelectionRange(pos, pos);
+                    });
+                });
+                [text1, text2].forEach((el, idx) => {
+                    el.addEventListener('input', () => {
+                        updateLineNumbersFor(el, idx === 0 ? lines1 : lines2);
+                        highlightDifferences();
+                        pushHistory();
+                        saveToStorage();
+                    });
+                });
+                undoBtn.addEventListener('click', () => {
+                    if (history.length > 1) {
+                        const last = history.pop();
+                        redoStack.push(last);
+                        const prev = history[history.length - 1];
+                        text1.value = prev.text1;
+                        text2.value = prev.text2;
+                        highlightedResultDiv.innerHTML = prev.highlightedHTML;
+                        missingResultDiv.innerHTML = prev.missingHTML;
+                        updateLineNumbersFor(text1, lines1);
+                        updateLineNumbersFor(text2, lines2);
+                        saveToStorage();
+                    }
+                });
+                redoBtn.addEventListener('click', () => {
+                    if (redoStack.length > 0) {
+                        const next = redoStack.pop();
+                        history.push(next);
+                        text1.value = next.text1;
+                        text2.value = next.text2;
+                        highlightedResultDiv.innerHTML = next.highlightedHTML;
+                        missingResultDiv.innerHTML = next.missingHTML;
+                        updateLineNumbersFor(text1, lines1);
+                        updateLineNumbersFor(text2, lines2);
+                        saveToStorage();
+                    }
+                });
+                clearBtn.addEventListener('click', () => {
+                    pushHistory();
+                    text1.value = '';
+                    text2.value = '';
+                    highlightedResultDiv.innerHTML = '';
+                    missingResultDiv.innerHTML = '';
+                    fileInputs.forEach(input => (input.value = ''));
+                    updateLineNumbersFor(text1, lines1);
+                    updateLineNumbersFor(text2, lines2);
+                    pushHistory();
+                    saveToStorage();
+                });
+                clear1Btn.addEventListener('click', () => {
+                    pushHistory();
+                    text1.value = '';
+                    if (fileInputs.length >= 1) fileInputs[0].value = '';
+                    updateLineNumbersFor(text1, lines1);
+                    highlightDifferences();
+                    pushHistory();
+                    saveToStorage();
+                });
+                clear2Btn.addEventListener('click', () => {
+                    pushHistory();
+                    text2.value = '';
+                    if (fileInputs.length >= 2) fileInputs[1].value = '';
+                    updateLineNumbersFor(text2, lines2);
+                    highlightDifferences();
+                    pushHistory();
+                    saveToStorage();
+                });
+                window.addEventListener('load', () => {
+                    const saved1 = localStorage.getItem('text1') || '';
+                    const saved2 = localStorage.getItem('text2') || '';
+                    text1.value = saved1;
+                    text2.value = saved2;
+                    updateLineNumbersFor(text1, lines1);
+                    updateLineNumbersFor(text2, lines2);
+                    highlightDifferences();
+                    history = [{
+                        text1: text1.value,
+                        text2: text2.value,
+                        highlightedHTML: highlightedResultDiv.innerHTML,
+                        missingHTML: missingResultDiv.innerHTML
+                    }];
+                    redoStack = [];
+                    saveToStorage();
+                });
+        </script>
+    </body>
+</html>
