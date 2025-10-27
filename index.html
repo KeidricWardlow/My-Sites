@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Factorization</title>
+  <link href="https://fonts.googleapis.com/css2?family=Gabarito&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Gabarito', sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, turquoise, green, lightyellow);
+      font-size: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 24px;
+      background-color: lime;
+      color: black;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    button:hover {
+      background-color: red;
+      color: white;
+    }
+
+    textarea {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      resize: none;
+    }
+
+    #resultsDiv {
+      width: 100%;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid black;
+      padding: 10px;
+      word-wrap: break-word;
+    }
+
+    .result-block {
+      margin-bottom: 10px;
+    }
+
+    .factor-list {
+      display: none;
+      margin-top: 5px;
+    }
+
+    .history-buttons {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="input-area">
+      <div class="history-buttons">
+        <button id="undoBtn">Undo</button>
+        <button id="redoBtn">Redo</button>
+      </div>
+      <button id="chooseFileBtn">Choose File</button>
+      <textarea id="inputArea" rows="10" placeholder="Paste or enter text here..."></textarea>
+      <button id="calcBtn">Calculate</button>
+      <button id="exportBtn">Export CSV</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+    <div id="resultsDiv"></div>
+    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+  </div>
+
+  <script>
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
+    const fileInput = document.getElementById('fileInput');
+    const calcBtn = document.getElementById('calcBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const inputArea = document.getElementById('inputArea');
+    const resultsDiv = document.getElementById('resultsDiv');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    let factorResults = [];
+    let history = [];
+    let redoStack = [];
+    let isRestoring = false;
+
+    function saveState() {
+      if (isRestoring) return; // prevent double-tap behavior
+      history.push({
+        input: inputArea.value,
+        results: JSON.stringify(factorResults)
+      });
+      if (history.length > 100) history.shift();
+      redoStack = [];
+    }
+
+    function restoreState(state) {
+      isRestoring = true;
+      inputArea.value = state.input;
+      factorResults = JSON.parse(state.results);
+      renderResults();
+      localStorage.setItem('factorInput', inputArea.value);
+      localStorage.setItem('factorResults', state.results);
+      isRestoring = false;
+    }
+
+    function undo() {
+      if (history.length > 1) {
+        const current = history.pop();
+        redoStack.push(current);
+        const previous = history[history.length - 1];
+        restoreState(previous);
+      }
+    }
+
+    function redo() {
+      if (redoStack.length > 0) {
+        const state = redoStack.pop();
+        history.push(state);
+        restoreState(state);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      const savedText = localStorage.getItem('factorInput');
+      const savedResults = localStorage.getItem('factorResults');
+      if (savedText) inputArea.value = savedText;
+      if (savedResults) factorResults = JSON.parse(savedResults);
+      renderResults();
+      saveState();
+    });
+
+    chooseFileBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        inputArea.value = event.target.result;
+        localStorage.setItem('factorInput', event.target.result);
+        saveState();
+      };
+      reader.readAsText(file);
+    });
+
+    function allFactors(n) {
+      if (isNaN(n) || n < 1) return [];
+      let factors = [];
+      for (let i = 1; i <= n; i++) {
+        if (n % i === 0) factors.push(i);
+      }
+      return factors;
+    }
+
+    function renderResults() {
+      resultsDiv.innerHTML = '';
+      factorResults.forEach(item => {
+        const block = document.createElement('div');
+        block.className = 'result-block';
+
+        const summary = document.createElement('p');
+        summary.textContent = `Factors of ${item.number}:`;
+        block.appendChild(summary);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = 'Show/Hide';
+        toggleBtn.style.marginBottom = '5px';
+        block.appendChild(toggleBtn);
+
+        const factorList = document.createElement('div');
+        factorList.className = 'factor-list';
+        factorList.innerHTML = item.factors
+          .map(f => `${f} → ${item.number} ÷ ${f} = ${item.number / f}`)
+          .join('<br>');
+        block.appendChild(factorList);
+
+        toggleBtn.addEventListener('click', () => {
+          factorList.style.display = factorList.style.display === 'none' ? 'block' : 'none';
+        });
+
+        resultsDiv.appendChild(block);
+      });
+    }
+
+    calcBtn.addEventListener('click', () => {
+      const lines = inputArea.value.split('\n');
+      resultsDiv.innerHTML = '';
+      factorResults = [];
+
+      lines.forEach((line) => {
+        const num = parseInt(line.trim(), 10);
+        if (!isNaN(num) && line.trim() !== "") {
+          const factors = allFactors(num);
+          const calculations = factors.map(f => `${num} / ${f} = ${num / f}`);
+          factorResults.push({
+            number: num,
+            factors: factors,
+            calculations: calculations
+          });
+        }
+      });
+
+      localStorage.setItem('factorInput', inputArea.value);
+      localStorage.setItem('factorResults', JSON.stringify(factorResults));
+      renderResults();
+      saveState();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      if (factorResults.length === 0) return;
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Number,Factors,Calculations\n";
+      factorResults.forEach(item => {
+        csvContent += `"${item.number}","${item.factors.join(', ')}","${item.calculations.join('; ')}"\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "factors.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      inputArea.value = '';
+      resultsDiv.replaceChildren();
+      factorResults = [];
+      localStorage.removeItem('factorInput');
+      localStorage.removeItem('factorResults');
+      saveState();
+    });
+
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+  </script>
+</body>
+</html>
