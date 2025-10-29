@@ -1,424 +1,371 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pie Chart</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-        <style>
-            body {
-                font-family: Verdana, sans-serif;
-                background-color: white;
-                transition: background-color 1s;
-                margin: 0;
-                padding: 0;
-            }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"></script>
+<title>Integer Calculator</title>
+<style>
+body {
+    background: linear-gradient(to right, darkblue, cyan, black);
+    margin: 0;
+    height: 100vh;
+    font-family: 'Lora', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.container {
+    padding: 20px;
+    text-align: center;
+    color: brown;
+    width: 100%;
+    max-width: 800px;
+    height: 90vh;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: auto;
+}
+textarea,
+.number-inputs {
+    resize: none;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 20px;
+    padding: 5px;
+    font-size: 16px;
+}
+input[type=number] {
+    width: 90%;
+    margin: 5px 0;
+    padding: 5px;
+    font-size: 16px;
+}
+select {
+    margin-top: 20px;
+    padding: 5px;
+    font-size: 16px;
+}
+button {
+    margin-top: 10px;
+    margin-right: 5px;
+    padding: 10px 15px;
+    cursor: pointer;
+    background: darkorange;
+    color: white;
+    border: 2px solid black;
+    font-size: 16px;
+    font-family: 'Lora', sans-serif;
+    border-radius: 6px;
+}
+button:hover {
+    background: linear-gradient(to right, lime, darkgreen);
+}
+h2 {
+    margin-top: 20px;
+}
+#resultDisplay {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid brown;
+    background-color: rgba(255, 228, 196, 0.5);
+    border-radius: 4px;
+}
+.history {
+    margin-top: 20px;
+    border-top: 1px solid brown;
+    padding-top: 10px;
+    flex-grow: 1;
+}
+.history-item {
+    margin: 5px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<input type="file" id="fileInput" accept=".txt" />
+<div id="inputContainer">
+<textarea id="numberInput" rows="15" placeholder="Enter integers or expressions separated by newline..."></textarea>
+</div>
+<div>
+<select id="operationSelect">
+<option value="exponent">^ Exponent</option>
+<option value="multiply">× Multiply</option>
+<option value="divide">÷ Divide</option>
+<option value="add">+ Add</option>
+<option value="subtract">- Subtract</option>
+<option value="modulo">% Modulo</option>
+</select>
+</div>
+<button id="calculateButton">Calculate</button>
+<button id="clearButton">Clear Input</button>
+<button id="clearHistoryButton">Clear History</button>
+<button id="exportCSVButton">Export History</button>
+<button id="undoButton">Undo</button>
+<button id="redoButton">Redo</button>
+<h2>Result:</h2>
+<div id="resultDisplay"></div>
+<div class="history" id="historyContainer">
+<h3>History:</h3>
+</div>
+</div>
+<script>
+const fileInput = document.getElementById('fileInput');
+const inputContainer = document.getElementById('inputContainer');
+const operationSelect = document.getElementById('operationSelect');
+const resultDisplay = document.getElementById('resultDisplay');
+const historyContainer = document.getElementById('historyContainer');
+let undoStack = JSON.parse(localStorage.getItem('undoStack') || '[]');
+let redoStack = JSON.parse(localStorage.getItem('redoStack') || '[]');
+let lastSavedState = null;
+let saveTimeout;
 
-            .container {
-                text-align: center;
-                margin-top: 30px;
-            }
+function loadExpModInputs(op) {
+    inputContainer.innerHTML = '';
+    const div = document.createElement('div');
+    div.classList.add('number-inputs');
+    const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
+    const saved = JSON.parse(localStorage.getItem(key) || '[0,0]');
+    saved.forEach(v => {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = v;
+        input.addEventListener('input', saveState);
+        div.appendChild(input);
+    });
+    while (div.children.length < 2) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = 0;
+        input.addEventListener('input', saveState);
+        div.appendChild(input);
+    }
+    inputContainer.appendChild(div);
+}
 
-            #chart-container {
-                margin: 20px auto;
-                max-width: 500px;
-            }
+function loadTextarea() {
+    inputContainer.innerHTML = `<textarea id="numberInput" rows="15" placeholder="Enter integers or expressions separated by newline..."></textarea>`;
+    if (localStorage.getItem('numberData')) {
+        document.getElementById('numberInput').value = localStorage.getItem('numberData');
+    }
+}
 
-            button {
-                margin: 10px;
-                padding: 10px 20px;
-                cursor: pointer;
-                border: none;
-                border-radius: 5px;
-                background-color: turquoise;
-                color: white;
-                transition: background-color 1s;
-                font-size: 16px;
-            }
+function saveExpModInputs(op) {
+    const expModInputs = document.querySelectorAll('.number-inputs input');
+    if (expModInputs.length) {
+        const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
+        const values = Array.from(expModInputs).map(i => i.value);
+        localStorage.setItem(key, JSON.stringify(values));
+    }
+}
 
-            button:hover {
-                background: linear-gradient(to right, cyan, darkblue);
-            }
+function getCurrentState() {
+    return {
+        inputs: document.getElementById('numberInput') ? document.getElementById('numberInput').value : Array.from(document.querySelectorAll('.number-inputs input')).map(i => i.value),
+        operation: operationSelect.value,
+        result: resultDisplay.innerHTML,
+        history: JSON.parse(localStorage.getItem('history') || '[]')
+    };
+}
 
-            input,
-            select {
-                padding: 6px;
-                margin: 6px;
-                border: 1px solid gray;
-                border-radius: 5px;
-                font-size: 14px;
-            }
+function saveState() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        const state = getCurrentState();
+        if (JSON.stringify(state) === JSON.stringify(lastSavedState)) return;
+        undoStack.push(state);
+        localStorage.setItem('undoStack', JSON.stringify(undoStack));
+        redoStack = [];
+        localStorage.setItem('redoStack', JSON.stringify(redoStack));
+        lastSavedState = state;
+    }, 150);
+}
 
-            .day-theme {
-                background-color: white;
-                color: black;
-            }
+function restoreState(state) {
+    if (!state) return;
+    inputContainer.innerHTML = '';
+    if (state.operation === 'exponent' || state.operation === 'modulo') {
+        loadExpModInputs(state.operation);
+        const inputs = document.querySelectorAll('.number-inputs input');
+        state.inputs.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; });
+        saveExpModInputs(state.operation);
+    } else {
+        loadTextarea();
+        document.getElementById('numberInput').value = state.inputs;
+        localStorage.setItem('numberData', state.inputs);
+    }
+    operationSelect.value = state.operation;
+    resultDisplay.innerHTML = state.result;
+    historyContainer.innerHTML = '<h3>History:</h3>';
+    state.history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = item;
+        historyContainer.appendChild(div);
+    });
+    localStorage.setItem('history', JSON.stringify(state.history));
+}
 
-            .night-theme {
-                background-color: black;
-                color: white;
-            }
+function addHistory(text) {
+    const history = JSON.parse(localStorage.getItem('history') || '[]');
+    if (history.length === 0 || history[history.length - 1] !== text) {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = text;
+        historyContainer.appendChild(div);
+        history.push(text);
+        localStorage.setItem('history', JSON.stringify(history));
+        saveState();
+    }
+}
 
-            .night-theme button {
-                background-color: turquoise;
-                color: white;
-            }
+if (localStorage.getItem('history')) {
+    JSON.parse(localStorage.getItem('history')).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.textContent = item;
+        historyContainer.appendChild(div);
+    });
+}
 
-            table {
-                margin: 20px auto;
-                border-collapse: collapse;
-                width: 90%;
-                max-width: 700px;
-            }
+if (operationSelect.value === 'exponent' || operationSelect.value === 'modulo') loadExpModInputs(operationSelect.value); else loadTextarea();
 
-            table th,
-            table td {
-                border: 1px solid gray;
-                padding: 8px;
-                text-align: center;
-            }
+fileInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const textarea = document.getElementById('numberInput');
+            if (textarea) textarea.value = e.target.result;
+            saveState();
+        }
+        reader.readAsText(file);
+    }
+});
 
-            table th {
-                background: moccasin;
-            }
+operationSelect.addEventListener('change', function() {
+    saveState();
+    const op = operationSelect.value;
+    if (op === 'exponent' || op === 'modulo') {
+        saveExpModInputs(op === 'exponent' ? 'modulo' : 'exponent'); // Save the previous one if switching between them
+        loadExpModInputs(op);
+    } else { 
+        saveExpModInputs('exponent');
+        saveExpModInputs('modulo');
+        loadTextarea(); 
+    }
+});
 
-            .night-theme table th {
-                background: brown;
-                color: white;
-            }
+document.addEventListener('input', (e) => {
+    if (e.target.id === 'numberInput' || e.target.closest('.number-inputs')) saveState();
+});
 
-            tr.dragging {
-                opacity: 0.5;
-            }
+document.getElementById('calculateButton').addEventListener('click', function() {
+    let expressions;
+    const op = operationSelect.value;
+    let operationText = '';
+    let result;
+    if (op === 'modulo' || op === 'exponent') {
+        expressions = Array.from(document.querySelectorAll('.number-inputs input')).map(i => i.value.trim()).filter(v => v !== '');
+        saveExpModInputs(op);
+    } else {
+        const textarea = document.getElementById('numberInput');
+        expressions = textarea.value.trim().split('\n').map(v => v.trim()).filter(v => v !== '');
+    }
+    if (expressions.length === 0) { resultDisplay.innerHTML = 'Please enter valid expressions.'; return; }
+    try {
+        switch (op) {
+            case 'multiply':
+            case 'add':
+            case 'subtract':
+            case 'divide':
+                const joined = expressions.join(op === 'multiply' ? '*' : op === 'add' ? '+' : op === 'subtract' ? '-' : '/');
+                result = math.evaluate(joined);
+                operationText = joined;
+                break;
+            case 'exponent':
+                result = expressions.reduceRight((acc, val) => Math.pow(Number(val), acc));
+                operationText = expressions.join(' ^ ');
+                break;
+            case 'modulo':
+                result = expressions.reduce((acc, val, i) => i === 0 ? Number(val) : acc % Number(val));
+                operationText = expressions.join(' % ');
+                break;
+        }
+        const formattedResult = (typeof result === 'number' && result < 0) ? `(${result})` : result;
+        resultDisplay.innerHTML = `${operationText} = ${formattedResult}`;
+        if (op !== 'modulo' && op !== 'exponent') {
+            const textarea = document.getElementById('numberInput');
+            if (textarea) localStorage.setItem('numberData', textarea.value);
+        }
+        addHistory(`${operationText} = ${formattedResult}`);
+        saveState();
+    } catch {
+        resultDisplay.innerHTML = 'Error in calculation';
+    }
+});
 
-            .drag-handle {
-                cursor: grab;
-                font-weight: bold;
-            }
+document.getElementById('clearButton').addEventListener('click', function() {
+    saveState();
+    const expInputs = document.querySelectorAll('.number-inputs input');
+    if (expInputs.length) expInputs.forEach(i => i.value = '');
+    const textarea = document.getElementById('numberInput');
+    if (textarea) textarea.value = '';
+    resultDisplay.innerHTML = '';
+    localStorage.removeItem('numberData');
+    saveState();
+});
 
-            .update-check {
-                width: 30px;
-                height: 30px;
-                background-color: limegreen;
-                border: none;
-                color: white;
-                border-radius: 5px;
-                font-size: 20px;
-                font-weight: bold;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body class="day-theme">
-        <div class="container">
-            <div id="chart-container">
-                <canvas id="pieChart" width="400" height="400"></canvas>
-            </div>
-            <div>
-                <input type="number" id="measurement" placeholder="Value" min="1">
-                <input type="text" id="label" placeholder="Label">
-                <input type="color" id="color" value="#ff6384">
-                <button id="addMeasurement">Add</button>
-            </div>
-            <div>
-                <label for="chartType">Chart Type:</label>
-                <select id="chartType">
-                    <option value="pie">Pie</option>
-                    <option value="doughnut">Doughnut</option>
-                    <option value="bar">Bar</option>
-                </select>
-            </div>
-            <div>
-                <label for="filename">Filename:</label>
-                <input type="text" id="filename" placeholder="Enter filename">
-            </div>
-            <button id="saveChart">Save as JPG</button>
-            <button id="savePDF">Save as PDF</button>
-            <button id="toggleTheme">Toggle Day/Night Theme</button>
-            <button id="print">Print</button>
-            <button id="clearAll" style="background:red;">Clear All Data</button>
-            <button id="undo" style="background:orange;">Undo</button>
-            <button id="redo" style="background:green;">Redo</button>
-            <h3>Editable Data</h3>
-            <table id="dataTable">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Label</th>
-                        <th>Value</th>
-                        <th>Color</th>
-                        <th>Update</th>
-                        <th>Delete</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        <script>
-            const ctx = document.getElementById('pieChart').getContext('2d');
-            let chart;
-            let data = [],
-                labels = [],
-                colors = [];
-            let isNightTheme = false,
-                chartType = "pie",
-                filename = "";
-            let history = [],
-                redoStack = [];
+document.getElementById('clearHistoryButton').addEventListener('click', function() {
+    saveState();
+    document.querySelectorAll('.history-item').forEach(item => item.remove());
+    localStorage.removeItem('history');
+    saveState();
+});
 
-            function saveState() {
-                const state = {
-                    data: [...data],
-                    labels: [...labels],
-                    colors: [...colors],
-                    isNightTheme,
-                    chartType,
-                    filename
-                };
-                history.push(JSON.stringify(state));
-                if (history.length > 50) history.shift();
-                redoStack = [];
-                localStorage.setItem('chartData', JSON.stringify(state));
-            }
+document.getElementById('exportCSVButton').addEventListener('click', function() {
+    const history = JSON.parse(localStorage.getItem('history') || '[]');
+    if (history.length === 0) return;
+    const blob = new Blob([history.join('\n')], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'history.csv';
+    link.click();
+});
 
-            function restoreState(state) {
-                data = [...state.data];
-                labels = [...state.labels];
-                colors = [...state.colors];
-                isNightTheme = state.isNightTheme;
-                chartType = state.chartType;
-                filename = state.filename;
-                document.body.classList.toggle('night-theme', isNightTheme);
-                document.body.classList.toggle('day-theme', !isNightTheme);
-                document.getElementById("chartType").value = chartType;
-                document.getElementById("filename").value = filename;
-                drawChart();
-            }
+document.getElementById('undoButton').addEventListener('click', () => {
+    if (undoStack.length === 0) return;
+    const currentState = getCurrentState();
+    redoStack.push(currentState);
+    localStorage.setItem('redoStack', JSON.stringify(redoStack));
+    const lastState = undoStack.pop();
+    localStorage.setItem('undoStack', JSON.stringify(undoStack));
+    restoreState(lastState);
+});
 
-            function loadState() {
-                const saved = localStorage.getItem('chartData');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    restoreState(parsed);
-                }
-            }
+document.getElementById('redoButton').addEventListener('click', () => {
+    if (redoStack.length === 0) return;
+    const currentState = getCurrentState();
+    undoStack.push(currentState);
+    localStorage.setItem('undoStack', JSON.stringify(undoStack));
+    const nextState = redoStack.pop();
+    localStorage.setItem('redoStack', JSON.stringify(redoStack));
+    restoreState(nextState);
+});
 
-            function updateTable() {
-                const tbody = document.querySelector("#dataTable tbody");
-                tbody.innerHTML = "";
-                labels.forEach((label, i) => {
-                    const row = document.createElement("tr");
-                    row.draggable = true;
-                    row.dataset.index = i;
-                    const handleCell = document.createElement("td");
-                    handleCell.className = "drag-handle";
-                    handleCell.textContent = "☰";
-                    row.appendChild(handleCell);
-                    row.addEventListener("dragstart", e => {
-                        row.classList.add("dragging");
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", i);
-                    });
-                    row.addEventListener("dragend", () => row.classList.remove("dragging"));
-                    row.addEventListener("dragover", e => e.preventDefault());
-                    row.addEventListener("drop", e => {
-                        e.preventDefault();
-                        const fromIndex = Number(e.dataTransfer.getData("text/plain"));
-                        const toIndex = Number(row.dataset.index);
-                        if (fromIndex !== toIndex) {
-                            [labels[fromIndex], labels[toIndex]] = [labels[toIndex], labels[fromIndex]];
-                            [data[fromIndex], data[toIndex]] = [data[toIndex], data[fromIndex]];
-                            [colors[fromIndex], colors[toIndex]] = [colors[toIndex], colors[fromIndex]];
-                            saveState();
-                            drawChart();
-                        }
-                    });
-                    const labelCell = document.createElement("td");
-                    const labelInput = document.createElement("input");
-                    labelInput.type = "text";
-                    labelInput.value = label;
-                    labelCell.appendChild(labelInput);
-                    row.appendChild(labelCell);
-                    const valueCell = document.createElement("td");
-                    const valueInput = document.createElement("input");
-                    valueInput.type = "number";
-                    valueInput.min = "1";
-                    valueInput.value = data[i];
-                    valueCell.appendChild(valueInput);
-                    row.appendChild(valueCell);
-                    const colorCell = document.createElement("td");
-                    const colorInput = document.createElement("input");
-                    colorInput.type = "color";
-                    colorInput.value = colors[i];
-                    colorCell.appendChild(colorInput);
-                    row.appendChild(colorCell);
-                    const updateCell = document.createElement("td");
-                    const updateBtn = document.createElement("button");
-                    updateBtn.className = "update-check";
-                    updateBtn.textContent = "✓";
-                    updateBtn.addEventListener("click", () => {
-                        labels[i] = labelInput.value;
-                        data[i] = Number(valueInput.value);
-                        colors[i] = colorInput.value;
-                        drawChart();
-                        saveState();
-                    });
-                    updateCell.appendChild(updateBtn);
-                    row.appendChild(updateCell);
-                    const deleteCell = document.createElement("td");
-                    const deleteBtn = document.createElement("button");
-                    deleteBtn.textContent = "X";
-                    deleteBtn.style.background = "red";
-                    deleteBtn.style.color = "white";
-                    deleteBtn.addEventListener("click", () => {
-                        labels.splice(i, 1);
-                        data.splice(i, 1);
-                        colors.splice(i, 1);
-                        drawChart();
-                        saveState();
-                        updateTable();
-                    });
-                    deleteCell.appendChild(deleteBtn);
-                    row.appendChild(deleteCell);
-                    tbody.appendChild(row);
-                });
-            }
-            document.getElementById('filename').addEventListener('input', e => {
-                filename = e.target.value.trim();
-                saveState();
-            });
-            document.getElementById('addMeasurement').addEventListener('click', () => {
-                const measurement = document.getElementById('measurement').value;
-                const label = document.getElementById('label').value;
-                const color = document.getElementById('color').value;
-                if (measurement && label) {
-                    data.push(Number(measurement));
-                    labels.push(label);
-                    colors.push(color);
-                    drawChart();
-                    saveState();
-                    updateTable();
-                    document.getElementById('measurement').value = '';
-                    document.getElementById('label').value = '';
-                }
-            });
-            document.getElementById('chartType').addEventListener('change', e => {
-                chartType = e.target.value;
-                drawChart();
-                saveState();
-            });
-            document.getElementById('saveChart').addEventListener('click', () => {
-                const safeFilename = filename || 'chart';
-                const link = document.createElement('a');
-                link.download = `${safeFilename}.jpg`;
-                link.href = document.getElementById('pieChart').toDataURL('image/jpeg', 1.0);
-                link.click();
-            });
-            document.getElementById('savePDF').addEventListener('click', () => {
-                const safeFilename = filename || 'chart';
-                const canvas = document.getElementById('pieChart');
-                const imgData = canvas.toDataURL('image/png');
-                const {
-                    jsPDF
-                } = window.jspdf;
-                const pdf = new jsPDF();
-                const imgProps = pdf.getImageProperties(imgData);
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-                pdf.save(`${safeFilename}.pdf`);
-            });
-            document.getElementById('toggleTheme').addEventListener('click', () => {
-                isNightTheme = !isNightTheme;
-                document.body.classList.toggle('night-theme', isNightTheme);
-                document.body.classList.toggle('day-theme', !isNightTheme);
-                saveState();
-            });
-            document.getElementById('clearAll').addEventListener('click', () => {
-                if (confirm("Are you sure you want to clear all data?")) {
-                    data = [];
-                    labels = [];
-                    colors = [];
-                    filename = "";
-                    chartType = "pie";
-                    isNightTheme = false;
-                    localStorage.removeItem('chartData');
-                    document.getElementById('filename').value = '';
-                    document.body.classList.remove('night-theme');
-                    document.body.classList.add('day-theme');
-                    drawChart();
-                    updateTable();
-                    saveState();
-                }
-            });
-            document.getElementById('undo').addEventListener('click', () => {
-                if (history.length > 1) {
-                    const current = history.pop();
-                    redoStack.push(current);
-                    const prev = JSON.parse(history[history.length - 1]);
-                    restoreState(prev);
-                }
-            });
-            document.getElementById('redo').addEventListener('click', () => {
-                if (redoStack.length > 0) {
-                    const state = JSON.parse(redoStack.pop());
-                    history.push(JSON.stringify(state));
-                    restoreState(state);
-                }
-            });
-
-            function drawChart() {
-                if (chart) chart.destroy();
-                let chartData = [...data];
-                let chartLabels = [...labels];
-                let chartColors = [...colors];
-                if (chartType === "pie" || chartType === "doughnut") {
-                    const total = chartData.reduce((a, b) => a + b, 0);
-                    if (total < 100) {
-                        chartData.push(100 - total);
-                        chartLabels.push("Remaining");
-                        chartColors.push("#cccccc");
-                    }
-                }
-                chart = new Chart(ctx, {
-                    type: chartType,
-                    data: {
-                        labels: chartLabels,
-                        datasets: [{
-                            data: chartData,
-                            backgroundColor: chartColors
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Chart'
-                            }
-                        }
-                    }
-                });
-                updateTable();
-            }
-            document.getElementById('print').addEventListener('click', () => {
-                const safeFilename = filename || 'chart';
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
-									<html>
-										<body>
-											<img src="${document.getElementById('pieChart').toDataURL()}" style="width:100%;"/>
-										</body>
-									</html>`);
-                printWindow.document.close();
-                printWindow.document.title = safeFilename;
-                printWindow.print();
-            });
-            loadState();
-        </script>
-    </body>
+document.addEventListener('keydown', function(e) {
+    const isCtrl = e.ctrlKey || e.metaKey;
+    if (!isCtrl) return;
+    if (e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); document.getElementById('undoButton').click(); }
+    if ((e.key.toLowerCase() === 'y') || (e.key.toLowerCase() === 'z' && e.shiftKey)) { e.preventDefault(); document.getElementById('redoButton').click(); }
+});
+</script>
+</body>
 </html>
