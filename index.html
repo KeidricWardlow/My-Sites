@@ -10,7 +10,7 @@
 body {
     background: linear-gradient(to right, darkblue, cyan, black);
     margin: 0;
-    height: 100vh;
+    min-height: 100vh;
     font-family: 'Lora', sans-serif;
     display: flex;
     justify-content: center;
@@ -23,7 +23,6 @@ body {
     color: brown;
     width: 100%;
     max-width: 800px;
-    height: 90vh;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0,0,0,0.4);
@@ -31,6 +30,8 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     overflow: auto;
+    max-height: 90vh;
+    box-sizing: border-box;
 }
 textarea,
 .number-inputs {
@@ -127,12 +128,11 @@ let redoStack = JSON.parse(localStorage.getItem('redoStack') || '[]');
 let lastSavedState = null;
 let saveTimeout;
 
-function loadExpModInputs(op) {
+function loadExpModInputs() {
     inputContainer.innerHTML = '';
     const div = document.createElement('div');
     div.classList.add('number-inputs');
-    const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
-    const saved = JSON.parse(localStorage.getItem(key) || '[0,0]');
+    const saved = JSON.parse(localStorage.getItem('expModNumbers') || '[0,0]');
     saved.forEach(v => {
         const input = document.createElement('input');
         input.type = 'number';
@@ -157,12 +157,11 @@ function loadTextarea() {
     }
 }
 
-function saveExpModInputs(op) {
+function saveExpModInputs() {
     const expModInputs = document.querySelectorAll('.number-inputs input');
     if (expModInputs.length) {
-        const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
         const values = Array.from(expModInputs).map(i => i.value);
-        localStorage.setItem(key, JSON.stringify(values));
+        localStorage.setItem('expModNumbers', JSON.stringify(values));
     }
 }
 
@@ -192,10 +191,10 @@ function restoreState(state) {
     if (!state) return;
     inputContainer.innerHTML = '';
     if (state.operation === 'exponent' || state.operation === 'modulo') {
-        loadExpModInputs(state.operation);
+        loadExpModInputs();
         const inputs = document.querySelectorAll('.number-inputs input');
         state.inputs.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; });
-        saveExpModInputs(state.operation);
+        localStorage.setItem('expModNumbers', JSON.stringify(state.inputs));
     } else {
         loadTextarea();
         document.getElementById('numberInput').value = state.inputs;
@@ -235,7 +234,7 @@ if (localStorage.getItem('history')) {
     });
 }
 
-if (operationSelect.value === 'exponent' || operationSelect.value === 'modulo') loadExpModInputs(operationSelect.value); else loadTextarea();
+if (operationSelect.value === 'exponent' || operationSelect.value === 'modulo') loadExpModInputs(); else loadTextarea();
 
 fileInput.addEventListener('change', function(event) {
     const file = event.target.files[0];
@@ -253,14 +252,7 @@ fileInput.addEventListener('change', function(event) {
 operationSelect.addEventListener('change', function() {
     saveState();
     const op = operationSelect.value;
-    if (op === 'exponent' || op === 'modulo') {
-        saveExpModInputs(op === 'exponent' ? 'modulo' : 'exponent'); // Save the previous one if switching between them
-        loadExpModInputs(op);
-    } else { 
-        saveExpModInputs('exponent');
-        saveExpModInputs('modulo');
-        loadTextarea(); 
-    }
+    if (op === 'exponent' || op === 'modulo') loadExpModInputs(); else { saveExpModInputs(); loadTextarea(); }
 });
 
 document.addEventListener('input', (e) => {
@@ -274,7 +266,6 @@ document.getElementById('calculateButton').addEventListener('click', function() 
     let result;
     if (op === 'modulo' || op === 'exponent') {
         expressions = Array.from(document.querySelectorAll('.number-inputs input')).map(i => i.value.trim()).filter(v => v !== '');
-        saveExpModInputs(op);
     } else {
         const textarea = document.getElementById('numberInput');
         expressions = textarea.value.trim().split('\n').map(v => v.trim()).filter(v => v !== '');
