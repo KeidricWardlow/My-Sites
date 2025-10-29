@@ -10,12 +10,13 @@
             body {
                 background: linear-gradient(to right, darkblue, cyan, black);
                 margin: 0;
-                height: 100vh;
+                min-height: 100vh;
                 font-family: 'Lora', sans-serif;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 overflow: hidden;
+                padding: 20px 0;
             }
 
             .container {
@@ -24,7 +25,7 @@
                 color: brown;
                 width: 100%;
                 max-width: 800px;
-                height: 90vh;
+                max-height: 90vh;
                 background: rgba(255, 255, 255, 0.1);
                 border-radius: 10px;
                 box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
@@ -32,6 +33,7 @@
                 flex-direction: column;
                 justify-content: flex-start;
                 overflow: auto;
+                margin: auto;
             }
 
             textarea,
@@ -264,7 +266,7 @@
                 saveState();
                 const op = operationSelect.value;
                 if (op === 'exponent' || op === 'modulo') {
-                    saveExpModInputs(op === 'exponent' ? 'modulo' : 'exponent'); // Save the previous one if switching between them
+                    saveExpModInputs(op === 'exponent' ? 'modulo' : 'exponent');
                     loadExpModInputs(op);
                 } else {
                     saveExpModInputs('exponent');
