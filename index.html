@@ -256,7 +256,7 @@
 
             function exportCSV() {
                 const rows = [];
-                const headers = ["Row", "Position", "Pattern 1", "Pattern 2", "Result", "Expression", "Cumulative"];
+                const headers = ["Row", "Position", "Base", "End", "Result", "Expression", "Cumulative"];
                 let cumulative = 0;
                 document.querySelectorAll(".row").forEach((row, i) => {
                     const resText = row.querySelector(".result").textContent.replace("Result: ", "").trim();
