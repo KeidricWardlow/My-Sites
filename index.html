@@ -123,8 +123,8 @@
             function pushState() {
                 const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
                     position: row.querySelector(".position").value,
-                    pattern1: row.querySelector(".pattern1").value,
-                    pattern2: row.querySelector(".pattern2").value
+                    base: row.querySelector(".base").value,
+                    end: row.querySelector(".end").value
                 })));
                 undoStack.push(current);
                 redoStack = [];
@@ -143,8 +143,8 @@
                 document.querySelectorAll(".row").forEach(row => {
                     rows.push({
                         position: row.querySelector(".position").value,
-                        pattern1: row.querySelector(".pattern1").value,
-                        pattern2: row.querySelector(".pattern2").value,
+                        base: row.querySelector(".base").value,
+                        end: row.querySelector(".end").value,
                         result: row.querySelector(".result").textContent,
                         expression: row.querySelector(".expression").textContent
                     });
@@ -160,8 +160,8 @@
 
             function calculateRow(row) {
                 const posVal = row.querySelector(".position").value;
-                const p1Val = row.querySelector(".pattern1").value;
-                const p2Val = row.querySelector(".pattern2").value;
+                const p1Val = row.querySelector(".base").value;
+                const p2Val = row.querySelector(".end").value;
                 const pos = parseInt(posVal, 10);
                 const p1 = parseInt(p1Val, 10);
                 const p2 = parseInt(p2Val, 10);
@@ -198,8 +198,8 @@
 				<span>Row ${rowCount}</span>
 				<div class="inputs">
 					<input type="number" class="position" placeholder="Position" value="${data.position || ""}">
-						<input type="number" class="pattern1" placeholder="Pattern 1" value="${data.pattern1 || ""}">
-							<input type="number" class="pattern2" placeholder="Pattern 2" value="${data.pattern2 || ""}">
+						<input type="number" class="base" placeholder="Pattern 1" value="${data.base || ""}">
+							<input type="number" class="end" placeholder="Pattern 2" value="${data.end || ""}">
 								<span class="result">${data.result || "Result:"}</span>
 							</div>
 							<button class="delete">Delete</button>
@@ -264,8 +264,8 @@
                     const resultNum = isNaN(result) ? 0 : result;
                     cumulative += resultNum;
                     const position = row.querySelector(".position").value;
-                    const p1 = row.querySelector(".pattern1").value;
-                    const p2 = row.querySelector(".pattern2").value;
+                    const p1 = row.querySelector(".base").value;
+                    const p2 = row.querySelector(".end").value;
                     const expr = row.querySelector(".expression").textContent;
                     const csvRow = [
                         i + 1,
@@ -298,8 +298,8 @@
                 if (undoStack.length === 0) return;
                 const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
                     position: row.querySelector(".position").value,
-                    pattern1: row.querySelector(".pattern1").value,
-                    pattern2: row.querySelector(".pattern2").value
+                    base: row.querySelector(".base").value,
+                    end: row.querySelector(".end").value
                 })));
                 redoStack.push(current);
                 const prevState = undoStack.pop();
@@ -309,8 +309,8 @@
                 if (redoStack.length === 0) return;
                 const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
                     position: row.querySelector(".position").value,
-                    pattern1: row.querySelector(".pattern1").value,
-                    pattern2: row.querySelector(".pattern2").value
+                    base: row.querySelector(".base").value,
+                    end: row.querySelector(".end").value
                 })));
                 undoStack.push(current);
                 const nextState = redoStack.pop();
