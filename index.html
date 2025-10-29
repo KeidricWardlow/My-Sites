@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Arithmetic Sequence</title>
+        <link href="https://fonts.googleapis.com/css2?family=News+Cycle&display=swap" rel="stylesheet">
+        <style>
+            body {
+                margin: 0;
+                font-family: 'News Cycle', sans-serif;
+                height: 100vh;
+                background: linear-gradient(to bottom right, moccasin, teal, red, navy);
+                color: white;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                padding: 20px;
+                overflow: hidden;
+                text-align: center;
+            }
+
+            .row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin: 8px 0;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                width: 100%;
+                max-width: 700px;
+            }
+
+            .inputs {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            input[type="number"] {
+                width: 100px;
+                padding: 4px;
+                font-size: 14px;
+                border: none;
+                border-radius: 4px;
+                text-align: center;
+            }
+
+            button {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid white;
+                border-radius: 5px;
+                color: white;
+                padding: 4px 10px;
+                cursor: pointer;
+                transition: 0.2s;
+            }
+
+            button:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+            #rows-container {
+                max-height: 60vh;
+                overflow-y: auto;
+                width: 100%;
+                max-width: 700px;
+                padding: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.3);
+                margin-top: 10px;
+            }
+
+            .result {
+                font-weight: bold;
+                white-space: nowrap;
+            }
+
+            .expression {
+                font-size: 13px;
+                color: silver;
+                margin-top: 3px;
+                white-space: pre-wrap;
+                text-align: left;
+            }
+
+            .collapsed .inputs {
+                display: none;
+            }
+
+            #controls {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="controls">
+            <button id="add-row">Add Row</button>
+            <button id="clear-all">Clear All</button>
+            <button id="undo">Undo</button>
+            <button id="redo">Redo</button>
+            <button id="export-csv">Export CSV</button>
+        </div>
+        <div id="rows-container"></div>
+        <script>
+            let rowCount = 0;
+            const rowsContainer = document.getElementById("rows-container");
+            let undoStack = [];
+            let redoStack = [];
+
+            function debounce(func, delay) {
+                let timer;
+                return function(...args) {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            function pushState() {
+                const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
+                    position: row.querySelector(".position").value,
+                    pattern1: row.querySelector(".pattern1").value,
+                    pattern2: row.querySelector(".pattern2").value
+                })));
+                undoStack.push(current);
+                redoStack = [];
+            }
+
+            function applyState(stateStr) {
+                const state = JSON.parse(stateStr);
+                rowsContainer.innerHTML = "";
+                rowCount = 0;
+                state.forEach(data => addRow(data, false));
+                saveAll();
+            }
+
+            function saveAll() {
+                const rows = [];
+                document.querySelectorAll(".row").forEach(row => {
+                    rows.push({
+                        position: row.querySelector(".position").value,
+                        pattern1: row.querySelector(".pattern1").value,
+                        pattern2: row.querySelector(".pattern2").value,
+                        result: row.querySelector(".result").textContent,
+                        expression: row.querySelector(".expression").textContent
+                    });
+                });
+                localStorage.setItem("integerFinderRows", JSON.stringify(rows));
+            }
+
+            function loadAll() {
+                const saved = JSON.parse(localStorage.getItem("integerFinderRows") || "[]");
+                if (saved.length === 0) addRow();
+                else saved.forEach(data => addRow(data));
+            }
+
+            function calculateRow(row) {
+                const posVal = row.querySelector(".position").value;
+                const p1Val = row.querySelector(".pattern1").value;
+                const p2Val = row.querySelector(".pattern2").value;
+                const pos = parseInt(posVal, 10);
+                const p1 = parseInt(p1Val, 10);
+                const p2 = parseInt(p2Val, 10);
+                const resultEl = row.querySelector(".result");
+                const exprEl = row.querySelector(".expression");
+                if (isNaN(pos) || isNaN(p1) || isNaN(p2) || pos < 1) {
+                    resultEl.textContent = "Result:";
+                    exprEl.textContent = "";
+                    saveAll();
+                    return;
+                }
+                const step = p2 - p1;
+                const start = p1 - step;
+                const result = start + step * pos;
+                resultEl.textContent = `Result: ${result}`;
+                const terms = [];
+                for (let i = 1; i <= pos; i++) terms.push(start + step * i);
+                let displayExpr = "";
+                if (pos <= 10) displayExpr = terms.join(" + ");
+                else displayExpr = terms.slice(0, 3).join(" + ") + " + ... + " + terms.slice(-3).join(" + ");
+                displayExpr += `\n(common difference = ${step})`;
+                exprEl.textContent = displayExpr;
+                saveAll();
+            }
+
+            function addRow(data = {}, push = true) {
+                if (push) pushState();
+                rowCount++;
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `
+        
+				<button class="toggle">Collapse</button>
+				<span>Row ${rowCount}</span>
+				<div class="inputs">
+					<input type="number" class="position" placeholder="Position" value="${data.position || ""}">
+						<input type="number" class="pattern1" placeholder="Pattern 1" value="${data.pattern1 || ""}">
+							<input type="number" class="pattern2" placeholder="Pattern 2" value="${data.pattern2 || ""}">
+								<span class="result">${data.result || "Result:"}</span>
+							</div>
+							<button class="delete">Delete</button>
+							<div class="expression">${data.expression || ""}</div>
+    `;
+                row.querySelector(".toggle").addEventListener("click", () => {
+                    row.classList.toggle("collapsed");
+                    row.querySelector(".toggle").textContent = row.classList.contains("collapsed") ? "Show" : "Collapse";
+                });
+                row.querySelector(".delete").addEventListener("click", () => {
+                    pushState();
+                    row.remove();
+                    updateRowLabels();
+                    saveAll();
+                });
+                row.querySelectorAll("input").forEach(input => {
+                    const debouncedUpdate = debounce(() => {
+                        calculateRow(row);
+                        pushState();
+                    }, 300);
+                    input.addEventListener("input", debouncedUpdate);
+                });
+                rowsContainer.appendChild(row);
+                calculateRow(row);
+                saveAll();
+            }
+
+            function updateRowLabels() {
+                const rows = document.querySelectorAll(".row");
+                rowCount = 0;
+                rows.forEach(row => {
+                    rowCount++;
+                    row.querySelector("span").textContent = `Row ${rowCount}`;
+                });
+            }
+
+            function clearAll() {
+                pushState();
+                localStorage.removeItem("integerFinderRows");
+                rowsContainer.innerHTML = "";
+                rowCount = 0;
+                addRow();
+                saveAll();
+            }
+
+            function escapeCsvCell(cell) {
+                if (cell == null) return "";
+                const s = String(cell).replace(/"/g, '""');
+                if (s.indexOf(",") !== -1 || s.indexOf("\n") !== -1 || s.indexOf('"') !== -1) {
+                    return `"${s}"`;
+                }
+                return s;
+            }
+
+            function exportCSV() {
+                const rows = [];
+                const headers = ["Row", "Position", "Pattern 1", "Pattern 2", "Result", "Expression", "Cumulative"];
+                let cumulative = 0;
+                document.querySelectorAll(".row").forEach((row, i) => {
+                    const resText = row.querySelector(".result").textContent.replace("Result: ", "").trim();
+                    const result = parseFloat(resText);
+                    const resultNum = isNaN(result) ? 0 : result;
+                    cumulative += resultNum;
+                    const position = row.querySelector(".position").value;
+                    const p1 = row.querySelector(".pattern1").value;
+                    const p2 = row.querySelector(".pattern2").value;
+                    const expr = row.querySelector(".expression").textContent;
+                    const csvRow = [
+                        i + 1,
+                        escapeCsvCell(position),
+                        escapeCsvCell(p1),
+                        escapeCsvCell(p2),
+                        escapeCsvCell(resultNum),
+                        escapeCsvCell(expr),
+                        escapeCsvCell(cumulative)
+                    ];
+                    rows.push(csvRow);
+                });
+                const csv = headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+                const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;"
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "integer_finder.csv";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            document.getElementById("add-row").addEventListener("click", () => addRow());
+            document.getElementById("clear-all").addEventListener("click", clearAll);
+            document.getElementById("export-csv").addEventListener("click", exportCSV);
+            document.getElementById("undo").addEventListener("click", () => {
+                if (undoStack.length === 0) return;
+                const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
+                    position: row.querySelector(".position").value,
+                    pattern1: row.querySelector(".pattern1").value,
+                    pattern2: row.querySelector(".pattern2").value
+                })));
+                redoStack.push(current);
+                const prevState = undoStack.pop();
+                applyState(prevState);
+            });
+            document.getElementById("redo").addEventListener("click", () => {
+                if (redoStack.length === 0) return;
+                const current = JSON.stringify(Array.from(document.querySelectorAll(".row")).map(row => ({
+                    position: row.querySelector(".position").value,
+                    pattern1: row.querySelector(".pattern1").value,
+                    pattern2: row.querySelector(".pattern2").value
+                })));
+                undoStack.push(current);
+                const nextState = redoStack.pop();
+                applyState(nextState);
+            });
+            window.onload = () => {
+                loadAll();
+                pushState();
+            };
+        </script>
+    </body>
+</html>
