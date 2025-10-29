@@ -80,6 +80,393 @@
             }
 
             table th {
+                background: moccasin;
+            }
+
+            .night-theme table th {
+                background: brown;
+                color: white;
+            }
+
+            tr.dragging {
+                opacity: 0.5;
+            }
+
+            .drag-handle {
+                cursor: grab;
+                font-weight: bold;
+            }
+
+            .update-check {
+                width: 30px;
+                height: 30px;
+                background-color: limegreen;
+                border: none;
+                color: white;
+                border-radius: 5px;
+                font-size: 20px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body class="day-theme">
+        <div class="container">
+            <div id="chart-container">
+                <canvas id="pieChart" width="400" height="400"></canvas>
+            </div>
+            <div>
+                <input type="number" id="measurement" placeholder="Value" min="1">
+                <input type="text" id="label" placeholder="Label">
+                <input type="color" id="color" value="#ff6384">
+                <button id="addMeasurement">Add</button>
+            </div>
+            <div>
+                <label for="chartType">Chart Type:</label>
+                <select id="chartType">
+                    <option value="pie">Pie</option>
+                    <option value="doughnut">Doughnut</option>
+                    <option value="bar">Bar</option>
+                </select>
+            </div>
+            <div>
+                <label for="filename">Filename:</label>
+                <input type="text" id="filename" placeholder="Enter filename">
+            </div>
+            <button id="saveChart">Save as JPG</button>
+            <button id="savePDF">Save as PDF</button>
+            <button id="toggleTheme">Toggle Day/Night Theme</button>
+            <button id="print">Print</button>
+            <button id="clearAll" style="background:red;">Clear All Data</button>
+            <button id="undo" style="background:orange;">Undo</button>
+            <button id="redo" style="background:green;">Redo</button>
+            <h3>Editable Data</h3>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Label</th>
+                        <th>Value</th>
+                        <th>Color</th>
+                        <th>Update</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <script>
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            let chart;
+            let data = [],
+                labels = [],
+                colors = [];
+            let isNightTheme = false,
+                chartType = "pie",
+                filename = "";
+            let history = [],
+                redoStack = [];
+
+            function saveState() {
+                const state = {
+                    data: [...data],
+                    labels: [...labels],
+                    colors: [...colors],
+                    isNightTheme,
+                    chartType,
+                    filename
+                };
+                history.push(JSON.stringify(state));
+                if (history.length > 50) history.shift();
+                redoStack = [];
+                localStorage.setItem('chartData', JSON.stringify(state));
+            }
+
+            function restoreState(state) {
+                data = [...state.data];
+                labels = [...state.labels];
+                colors = [...state.colors];
+                isNightTheme = state.isNightTheme;
+                chartType = state.chartType;
+                filename = state.filename;
+                document.body.classList.toggle('night-theme', isNightTheme);
+                document.body.classList.toggle('day-theme', !isNightTheme);
+                document.getElementById("chartType").value = chartType;
+                document.getElementById("filename").value = filename;
+                drawChart();
+            }
+
+            function loadState() {
+                const saved = localStorage.getItem('chartData');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    restoreState(parsed);
+                }
+            }
+
+            function updateTable() {
+                const tbody = document.querySelector("#dataTable tbody");
+                tbody.innerHTML = "";
+                labels.forEach((label, i) => {
+                    const row = document.createElement("tr");
+                    row.draggable = true;
+                    row.dataset.index = i;
+                    const handleCell = document.createElement("td");
+                    handleCell.className = "drag-handle";
+                    handleCell.textContent = "☰";
+                    row.appendChild(handleCell);
+                    row.addEventListener("dragstart", e => {
+                        row.classList.add("dragging");
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", i);
+                    });
+                    row.addEventListener("dragend", () => row.classList.remove("dragging"));
+                    row.addEventListener("dragover", e => e.preventDefault());
+                    row.addEventListener("drop", e => {
+                        e.preventDefault();
+                        const fromIndex = Number(e.dataTransfer.getData("text/plain"));
+                        const toIndex = Number(row.dataset.index);
+                        if (fromIndex !== toIndex) {
+                            [labels[fromIndex], labels[toIndex]] = [labels[toIndex], labels[fromIndex]];
+                            [data[fromIndex], data[toIndex]] = [data[toIndex], data[fromIndex]];
+                            [colors[fromIndex], colors[toIndex]] = [colors[toIndex], colors[fromIndex]];
+                            saveState();
+                            drawChart();
+                        }
+                    });
+                    const labelCell = document.createElement("td");
+                    const labelInput = document.createElement("input");
+                    labelInput.type = "text";
+                    labelInput.value = label;
+                    labelCell.appendChild(labelInput);
+                    row.appendChild(labelCell);
+                    const valueCell = document.createElement("td");
+                    const valueInput = document.createElement("input");
+                    valueInput.type = "number";
+                    valueInput.min = "1";
+                    valueInput.value = data[i];
+                    valueCell.appendChild(valueInput);
+                    row.appendChild(valueCell);
+                    const colorCell = document.createElement("td");
+                    const colorInput = document.createElement("input");
+                    colorInput.type = "color";
+                    colorInput.value = colors[i];
+                    colorCell.appendChild(colorInput);
+                    row.appendChild(colorCell);
+                    const updateCell = document.createElement("td");
+                    const updateBtn = document.createElement("button");
+                    updateBtn.className = "update-check";
+                    updateBtn.textContent = "✓";
+                    updateBtn.addEventListener("click", () => {
+                        labels[i] = labelInput.value;
+                        data[i] = Number(valueInput.value);
+                        colors[i] = colorInput.value;
+                        drawChart();
+                        saveState();
+                    });
+                    updateCell.appendChild(updateBtn);
+                    row.appendChild(updateCell);
+                    const deleteCell = document.createElement("td");
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.textContent = "X";
+                    deleteBtn.style.background = "red";
+                    deleteBtn.style.color = "white";
+                    deleteBtn.addEventListener("click", () => {
+                        labels.splice(i, 1);
+                        data.splice(i, 1);
+                        colors.splice(i, 1);
+                        drawChart();
+                        saveState();
+                        updateTable();
+                    });
+                    deleteCell.appendChild(deleteBtn);
+                    row.appendChild(deleteCell);
+                    tbody.appendChild(row);
+                });
+            }
+            document.getElementById('filename').addEventListener('input', e => {
+                filename = e.target.value.trim();
+                saveState();
+            });
+            document.getElementById('addMeasurement').addEventListener('click', () => {
+                const measurement = document.getElementById('measurement').value;
+                const label = document.getElementById('label').value;
+                const color = document.getElementById('color').value;
+                if (measurement && label) {
+                    data.push(Number(measurement));
+                    labels.push(label);
+                    colors.push(color);
+                    drawChart();
+                    saveState();
+                    updateTable();
+                    document.getElementById('measurement').value = '';
+                    document.getElementById('label').value = '';
+                }
+            });
+            document.getElementById('chartType').addEventListener('change', e => {
+                chartType = e.target.value;
+                drawChart();
+                saveState();
+            });
+            document.getElementById('saveChart').addEventListener('click', () => {
+                const safeFilename = filename || 'chart';
+                const link = document.createElement('a');
+                link.download = `${safeFilename}.jpg`;
+                link.href = document.getElementById('pieChart').toDataURL('image/jpeg', 1.0);
+                link.click();
+            });
+            document.getElementById('savePDF').addEventListener('click', () => {
+                const safeFilename = filename || 'chart';
+                const canvas = document.getElementById('pieChart');
+                const imgData = canvas.toDataURL('image/png');
+                const {
+                    jsPDF
+                } = window.jspdf;
+                const pdf = new jsPDF();
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                pdf.save(`${safeFilename}.pdf`);
+            });
+            document.getElementById('toggleTheme').addEventListener('click', () => {
+                isNightTheme = !isNightTheme;
+                document.body.classList.toggle('night-theme', isNightTheme);
+                document.body.classList.toggle('day-theme', !isNightTheme);
+                saveState();
+            });
+            document.getElementById('clearAll').addEventListener('click', () => {
+                if (confirm("Are you sure you want to clear all data?")) {
+                    data = [];
+                    labels = [];
+                    colors = [];
+                    filename = "";
+                    chartType = "pie";
+                    isNightTheme = false;
+                    localStorage.removeItem('chartData');
+                    document.getElementById('filename').value = '';
+                    document.body.classList.remove('night-theme');
+                    document.body.classList.add('day-theme');
+                    drawChart();
+                    updateTable();
+                    saveState();
+                }
+            });
+            document.getElementById('undo').addEventListener('click', () => {
+                if (history.length > 1) {
+                    const current = history.pop();
+                    redoStack.push(current);
+                    const prev = JSON.parse(history[history.length - 1]);
+                    restoreState(prev);
+                }
+            });
+            document.getElementById('redo').addEventListener('click', () => {
+                if (redoStack.length > 0) {
+                    const state = JSON.parse(redoStack.pop());
+                    history.push(JSON.stringify(state));
+                    restoreState(state);
+                }
+            });
+
+            function drawChart() {
+                if (chart) chart.destroy();
+                let chartData = [...data];
+                let chartLabels = [...labels];
+                let chartColors = [...colors];
+                if (chartType === "pie" || chartType === "doughnut") {
+                    const total = chartData.reduce((a, b) => a + b, 0);
+                    if (total < 100) {
+                        chartData.push(100 - total);
+                        chartLabels.push("Remaining");
+                        chartColors.push("#cccccc");
+                    }
+                }
+                chart = new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            data: chartData,
+                            backgroundColor: chartColors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Chart'
+                            }
+                        }
+                    }
+                });
+                updateTable();
+            }
+            document.getElementById('print').addEventListener('click', () => {
+                const safeFilename = filename || 'chart';
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+									<html>
+										<body>
+											<img src="${document.getElementById('pieChart').toDataURL()}" style="width:100%;"/>
+										</body>
+									</html>`);
+                printWindow.document.close();
+                printWindow.document.title = safeFilename;
+                printWindow.print();
+            });
+            loadState();
+        </script>
+    </body>
+</html>                font-size: 16px;
+            }
+
+            button:hover {
+                background: linear-gradient(to right, cyan, darkblue);
+            }
+
+            input,
+            select {
+                padding: 6px;
+                margin: 6px;
+                border: 1px solid gray;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+
+            .day-theme {
+                background-color: white;
+                color: black;
+            }
+
+            .night-theme {
+                background-color: black;
+                color: white;
+            }
+
+            .night-theme button {
+                background-color: turquoise;
+                color: white;
+            }
+
+            table {
+                margin: 20px auto;
+                border-collapse: collapse;
+                width: 90%;
+                max-width: 700px;
+            }
+
+            table th,
+            table td {
+                border: 1px solid gray;
+                padding: 8px;
+                text-align: center;
+            }
+
+            table th {
                 background: #eee;
             }
 
