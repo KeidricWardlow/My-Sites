@@ -114,7 +114,7 @@
         cols: array[0]?.length || 1
       };
       redoStack.push(current);
-      history.pop(); // remove current state
+      history.pop();
       const prev = history[history.length - 1];
       restoreState(prev);
     }
