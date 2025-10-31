@@ -91,14 +91,12 @@
             const areaChartCanvas = document.getElementById('areaChart');
             const colorPicker = document.getElementById('color-picker');
             const filenameInput = document.getElementById('filename-input');
-            const fileTypeInput = document.getElementById('file-type');
             const undoButton = document.getElementById('undo');
             const redoButton = document.getElementById('redo');
             let chartInstance;
             const LS_POINTS_KEY = 'areaChart_points';
             const LS_COLOR_KEY = 'areaChart_color';
             const LS_FILENAME_KEY = 'areaChart_filename';
-            const LS_FILETYPE_KEY = 'areaChart_filetype';
             let history = [];
             let historyIndex = -1;
             const MAX_HISTORY = 50;
@@ -107,8 +105,7 @@
                 return {
                     points: getPointsData(),
                     color: colorPicker.value,
-                    filename: filenameInput.value,
-                    filetype: fileTypeInput.value
+                    filename: filenameInput.value
                 };
             }
 
@@ -118,14 +115,14 @@
                 state.points.forEach(pt => addPoint(pt.label, pt.value));
                 colorPicker.value = state.color;
                 filenameInput.value = state.filename;
-                fileTypeInput.value = state.filetype;
                 drawChart();
             }
 
             function pushHistory() {
-                const snapshot = getStateSnapshot();
+                const snapshot = JSON.stringify(getStateSnapshot());
+                if (history[historyIndex] === snapshot) return;
                 history = history.slice(0, historyIndex + 1);
-                history.push(JSON.stringify(snapshot));
+                history.push(snapshot);
                 if (history.length > MAX_HISTORY) history.shift();
                 historyIndex = history.length - 1;
             }
@@ -169,11 +166,11 @@
             function addPoint(label = "", value = "") {
                 const div = document.createElement('div');
                 div.className = 'point-input';
-                div.innerHTML = `
-        
+                div.innerHTML = `  
+
 										<input type="text" class="label-input" placeholder="Point ${inputsContainer.childElementCount + 1}" value="${label}">
-											<input type="number" class="value-input" min="0" value="${value}">
-    `;
+											<input type="number" class="value-input" min="0" value="${value}">  
+`;
                 inputsContainer.appendChild(div);
                 const labelInput = div.querySelector('.label-input');
                 const valueInput = div.querySelector('.value-input');
@@ -210,7 +207,7 @@
                         responsive: true,
                         scales: {
                             y: {
-                                beginAtZero: true
+                                beginAtZero: false
                             }
                         }
                     }
@@ -220,21 +217,19 @@
             function saveOtherSettingsToLocalStorage() {
                 localStorage.setItem(LS_COLOR_KEY, colorPicker.value);
                 localStorage.setItem(LS_FILENAME_KEY, filenameInput.value);
-                if (fileTypeInput) localStorage.setItem(LS_FILETYPE_KEY, fileTypeInput.value);
             }
 
             function loadOtherSettingsFromLocalStorage() {
                 const color = localStorage.getItem(LS_COLOR_KEY);
                 const filename = localStorage.getItem(LS_FILENAME_KEY);
-                const filetype = localStorage.getItem(LS_FILETYPE_KEY);
                 if (color) colorPicker.value = color;
                 if (filename) filenameInput.value = filename;
-                if (fileTypeInput && filetype) fileTypeInput.value = filetype;
             }
             window.addEventListener('DOMContentLoaded', () => {
                 loadPointsFromLocalStorage();
                 loadOtherSettingsFromLocalStorage();
                 drawChart();
+                history = [];
                 pushHistory();
             });
             addInputButton.addEventListener('click', () => {
@@ -256,7 +251,8 @@
             printButton.addEventListener('click', () => {
                 const filename = filenameInput.value.trim() || 'chart';
                 const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
+                printWindow.document.write(`  
+
 												<html>
 													<body>
 														<img src="${areaChartCanvas.toDataURL()}" style="width: 100%;"/>
@@ -276,23 +272,14 @@
                 saveOtherSettingsToLocalStorage();
                 pushHistory();
             });
-            if (fileTypeInput) fileTypeInput.addEventListener('change', () => {
-                saveOtherSettingsToLocalStorage();
-                pushHistory();
-            });
             const clearButton = document.getElementById('clear');
             clearButton.addEventListener('click', () => {
-                const firstInput = inputsContainer.firstElementChild;
                 inputsContainer.innerHTML = '';
-                if (firstInput) {
-                    const firstLabel = firstInput.querySelector('.label-input').value || 'Point 1';
-                    const firstValue = firstInput.querySelector('.value-input').value || '';
-                    addPoint(firstLabel, firstValue);
-                } else {
-                    addPoint('Point 1', '');
-                }
+                addPoint('Point 1', '');
                 savePointsToLocalStorage();
                 drawChart();
                 pushHistory();
             });
         </script>
+    </body>
+</html>
