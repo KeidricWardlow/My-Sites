@@ -78,14 +78,7 @@
             <br>
             <br>
             <input type="color" id="color-picker" value="#ffff00">
-            <label for="file-type">Save as:</label>
-            <select id="file-type">
-                <option value="png">PNG</option>
-                <option value="jpg">JPG</option>
-                <option value="webp">WEBP</option>
-            </select>
             <input type="text" id="filename-input" placeholder="Enter filename...">
-            <button id="save-chart">Save</button>
             <button id="print">Print</button>
             <canvas id="areaChart"></canvas>
         </div>
@@ -94,7 +87,6 @@
             const inputsContainer = document.getElementById('inputs-container');
             const addInputButton = document.getElementById('add-input');
             const removeInputButton = document.getElementById('remove-input');
-            const saveChartButton = document.getElementById('save-chart');
             const printButton = document.getElementById('print');
             const areaChartCanvas = document.getElementById('areaChart');
             const colorPicker = document.getElementById('color-picker');
@@ -179,11 +171,9 @@
                 div.className = 'point-input';
                 div.innerHTML = `
         
-										
-										
 										<input type="text" class="label-input" placeholder="Point ${inputsContainer.childElementCount + 1}" value="${label}">
 											<input type="number" class="value-input" min="0" value="${value}">
-      `;
+    `;
                 inputsContainer.appendChild(div);
                 const labelInput = div.querySelector('.label-input');
                 const valueInput = div.querySelector('.value-input');
@@ -213,7 +203,7 @@
                             backgroundColor: `${selectedColor}50`,
                             borderColor: selectedColor,
                             borderWidth: 2,
-                            fill: true,
+                            fill: true
                         }]
                     },
                     options: {
@@ -263,30 +253,13 @@
             });
             undoButton.addEventListener('click', undo);
             redoButton.addEventListener('click', redo);
-            saveChartButton.addEventListener('click', () => {
-                const fileType = fileTypeInput.value;
-                const filename = filenameInput.value.trim() || 'chart';
-                const link = document.createElement('a');
-                link.download = `${filename}.${fileType}`;
-                link.href = areaChartCanvas.toDataURL(`image/${fileType}`);
-                link.click();
-                saveOtherSettingsToLocalStorage();
-            });
             printButton.addEventListener('click', () => {
                 const filename = filenameInput.value.trim() || 'chart';
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
-												
-												
 												<html>
-													<body>`);
-                printWindow.document.write(`
-														
-														
-														<img src="${areaChartCanvas.toDataURL()}" style="width: 100%;"/>`);
-                printWindow.document.write(`
-													
-													
+													<body>
+														<img src="${areaChartCanvas.toDataURL()}" style="width: 100%;"/>
 													</body>
 												</html>`);
                 printWindow.document.close();
@@ -323,5 +296,3 @@
                 pushHistory();
             });
         </script>
-    </body>
-</html>
