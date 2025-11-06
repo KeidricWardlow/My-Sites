@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Number Calc</title>
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.3.1/decimal.min.js"></script>
+        <style>
+            body {
+                background: linear-gradient(to right, green, springgreen, white);
+                color: snow;
+                font-family: 'Merriweather', monospace;
+                height: 100vh;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .container {
+                width: 90%;
+                max-width: 1200px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                box-sizing: border-box;
+                border: 2px solid snow;
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.5);
+            }
+
+            .toolbar {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 15px;
+            }
+
+            select,
+            input,
+            button {
+                background: black;
+                color: snow;
+                border: 1px solid snow;
+                padding: 8px;
+                border-radius: 6px;
+                font-family: 'Merriweather', monospace;
+                transition: 0.2s;
+            }
+
+            select:hover,
+            input:hover,
+            button:hover {
+                background: snow;
+                color: black;
+            }
+
+            .editor {
+                display: flex;
+                gap: 10px;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+            }
+
+            textarea {
+                width: 100%;
+                height: 70vh;
+                background: black;
+                color: snow;
+                border: 1px solid snow;
+                border-radius: 6px;
+                resize: none;
+                padding: 10px;
+                font-size: 14px;
+                font-family: 'Merriweather', monospace;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .middle {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .middle input {
+                width: 60px;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="toolbar">
+                <button id="uploadBtn">Upload</button>
+                <select id="editOptions">
+                    <option>Edit</option>
+                    <option>Clear</option>
+                    <option>Cut</option>
+                    <option>Copy</option>
+                    <option>Undo</option>
+                    <option>Redo</option>
+                </select>
+                <button id="exportBtn">Export CSV</button>
+            </div>
+            <div class="editor">
+                <textarea id="inputArea"></textarea>
+                <div class="middle">
+                    <select id="operation">
+                        <option>^</option>
+                        <option>*</option>
+                        <option>/</option>
+                        <option>+</option>
+                        <option>-</option>
+                    </select>
+                    <input type="number" id="numberInput" min="0" />
+                </div>
+                <textarea id="outputArea" readonly></textarea>
+            </div>
+        </div>
+        <script>
+            const inputArea = document.getElementById("inputArea");
+            const outputArea = document.getElementById("outputArea");
+            const numberInput = document.getElementById("numberInput");
+            const operation = document.getElementById("operation");
+            const editOptions = document.getElementById("editOptions");
+            const exportBtn = document.getElementById("exportBtn");
+            const uploadBtn = document.getElementById("uploadBtn");
+            const historyStack = [];
+            let redoStack = [];
+
+            function pushState() {
+                historyStack.push({
+                    input: inputArea.value,
+                    output: outputArea.value,
+                    num: numberInput.value,
+                    op: operation.value
+                });
+                if (historyStack.length > 100) historyStack.shift();
+                redoStack = [];
+            }
+
+            function undo() {
+                if (historyStack.length < 2) return;
+                redoStack.push(historyStack.pop());
+                const last = historyStack[historyStack.length - 1];
+                inputArea.value = last.input;
+                outputArea.value = last.output;
+                numberInput.value = last.num;
+                operation.value = last.op;
+                process();
+                save();
+            }
+
+            function redo() {
+                if (redoStack.length === 0) return;
+                const state = redoStack.pop();
+                historyStack.push(state);
+                inputArea.value = state.input;
+                outputArea.value = state.output;
+                numberInput.value = state.num;
+                operation.value = state.op;
+                process();
+                save();
+            }
+            window.addEventListener("load", () => {
+                inputArea.value = localStorage.getItem("inputArea") || "";
+                outputArea.value = localStorage.getItem("outputArea") || "";
+                numberInput.value = localStorage.getItem("numberInput") || "";
+                operation.value = localStorage.getItem("operation") || "+";
+                process();
+                pushState();
+            });
+
+            function save() {
+                localStorage.setItem("inputArea", inputArea.value);
+                localStorage.setItem("outputArea", outputArea.value);
+                localStorage.setItem("numberInput", numberInput.value);
+                localStorage.setItem("operation", operation.value);
+            }
+            operation.addEventListener("change", () => {
+                process();
+                save();
+                pushState();
+            });
+            numberInput.addEventListener("input", () => {
+                process();
+                save();
+                pushState();
+            });
+            inputArea.addEventListener("input", () => {
+                process();
+                save();
+                pushState();
+            });
+
+            function process() {
+                const op = operation.value;
+                const num = new Decimal(numberInput.value || 0);
+                const lines = inputArea.value.split("\n");
+                const result = lines.map(line => {
+                    if (!line.trim()) return "";
+                    try {
+                        const val = new Decimal(line);
+                        switch (op) {
+                            case "^":
+                                return val.pow(num).toString();
+                            case "*":
+                                return val.times(num).toString();
+                            case "/":
+                                return val.div(num).toString();
+                            case "+":
+                                return val.plus(num).toString();
+                            case "-":
+                                return val.minus(num).toString();
+                            default:
+                                return line;
+                        }
+                    } catch {
+                        return line;
+                    }
+                });
+                outputArea.value = result.join("\n");
+            }
+            uploadBtn.addEventListener("click", () => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".txt";
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = evt => {
+                        inputArea.value = evt.target.result;
+                        process();
+                        save();
+                        pushState();
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+            async function copyToClipboard(text) {
+                if (!text) return false;
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    }
+                } catch (e) {}
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                } catch (e) {
+                    return false;
+                }
+            }
+            editOptions.addEventListener("change", async () => {
+                const opt = editOptions.value;
+                switch (opt) {
+                    case "Clear":
+                        inputArea.value = "";
+                        outputArea.value = "";
+                        numberInput.value = "";
+                        save();
+                        pushState();
+                        break;
+                    case "Cut": {
+                        const text = outputArea.value;
+                        const ok = await copyToClipboard(text);
+                        if (ok) {
+                            outputArea.value = "";
+                            save();
+                            pushState();
+                        }
+                        break;
+                    }
+                    case "Copy": {
+                        const text = outputArea.value;
+                        await copyToClipboard(text);
+                        break;
+                    }
+                    case "Undo":
+                        undo();
+                        break;
+                    case "Redo":
+                        redo();
+                        break;
+                }
+                editOptions.selectedIndex = 0;
+            });
+            exportBtn.addEventListener("click", () => {
+                const op = operation.value;
+                const num = numberInput.value;
+                const inputLines = inputArea.value.split("\n");
+                const outputLines = outputArea.value.split("\n");
+                let csvContent = "Input,Operation,Operand,Output\n";
+                for (let i = 0; i < inputLines.length; i++) {
+                    const inputVal = inputLines[i].replace(/,/g, " ");
+                    const outputVal = outputLines[i] || "";
+                    csvContent += `${inputVal},${op},${num},${outputVal}\n`;
+                }
+                const blob = new Blob([csvContent], {
+                    type: "text/csv;charset=utf-8;"
+                });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "output.csv";
+                link.click();
+            });
+        </script>
+    </body>
+</html>
