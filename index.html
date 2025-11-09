@@ -128,7 +128,7 @@
                 const line = document.createElement('div');
                 line.className = 'line';
                 const operator = document.createElement('select');
-                ['*', '/', '+', '-'].forEach(op => {
+                ['^','*', '/', '+', '-'].forEach(op => {
                     const o = document.createElement('option');
                     o.value = op;
                     o.textContent = op;
@@ -199,7 +199,7 @@
 
             function addLine() {
                 const container = document.getElementById('lines');
-                const line = createLine('*', '', true);
+                const line = createLine('^', '', true);
                 container.appendChild(line);
                 lines.push(line);
                 evaluateExpression();
