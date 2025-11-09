@@ -15,7 +15,7 @@ body {
   align-items: center;
   background: linear-gradient(135deg, orange, white, red);
   font-family: 'Oswald';
-  overflow: hidden;
+  overflow: auto;
 }
 
 .container {
@@ -81,6 +81,28 @@ input, select {
   width: 80%;
   text-align: center;
 }
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 600px;
+    padding: 50px;
+    border-radius: 16px;
+  }
+
+  button {
+    width: 120px;
+    padding: 12px;
+  }
+
+  input, select {
+    width: 85%;
+    font-size: 1.1em;
+  }
+
+  #result-container {
+    min-height: 150px;
+    max-height: 300px;
+  }
 </style>
 </head>
 <body>
