@@ -8,36 +8,83 @@
   <style>
     body {
       font-family: 'Montserrat', sans-serif;
-      background: chartreuse;
+      background: linear-gradient(135deg, springgreen, white);
       margin: 0;
-      padding: 20px;
-      overflow: auto;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
     }
 
     ul {
       list-style: none;
       padding: 0;
-      margin: 0 auto;
-      max-width: 100vh;
+      margin: 0;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      z-index: 2;
     }
 
     li a {
       display: block;
       text-decoration: none;
-      color: black;
       font-weight: 600;
       padding: 10px;
       border: 2px solid black;
       border-radius: 8px;
       margin: 6px 0;
       background: white;
-      text-align: center;
       transition: 0.2s;
     }
 
     li a:hover {
       background: black;
-      color: chartreuse;
+      color: springgreen;
+    }
+
+    .read {
+      color: red;
+    }
+
+    .unread {
+      color: blue;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: url("totaledcomputer.jpg") center/contain no-repeat;
+      opacity: 0.08;
+      width: 90%;
+      height: 90%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .overlay-watermark {
+      position: fixed;
+      bottom: 10px;
+      right: 20px;
+      width: 120px;
+      opacity: 0.4;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .watermark {
+      position: fixed;
+      bottom: 10px;
+      left: 20px;
+      font-size: 0.9rem;
+      color: rgba(0, 0, 0, 0.5);
+      z-index: 3;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -50,7 +97,7 @@
     <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
     <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
     <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank"> Increment Calculator</a></li>
+    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
     <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
     <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>
     <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
@@ -68,5 +115,30 @@
     <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
     <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
   </ul>
+
+  <img src="totaledcomputer.jpg" class="overlay-watermark">
+  <div class="watermark">© 2025 K’s Tools</div>
+
+  <script>
+    const links = document.querySelectorAll("ul li a");
+    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+
+    links.forEach(link => {
+      const href = link.getAttribute("href");
+      if (readLinks.includes(href)) {
+        link.classList.add("read");
+      } else {
+        link.classList.add("unread");
+      }
+      link.addEventListener("click", () => {
+        if (!readLinks.includes(href)) {
+          readLinks.push(href);
+          localStorage.setItem("readLinks", JSON.stringify(readLinks));
+          link.classList.remove("unread");
+          link.classList.add("read");
+        }
+      });
+    });
+  </script>
 </body>
 </html>
