@@ -6,16 +6,26 @@
   <title>K's Tools</title>  
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
   <style>
+    html, body {
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Montserrat', sans-serif;
       background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
-      overflow: hidden;
+      align-items: flex-start;
+      min-height: 100vh;
       position: relative;
+    }
+
+    @media (min-width: 768px) {
+      body {
+        align-items: center;
+      }
     }
 
     ul {
