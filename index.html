@@ -10,24 +10,27 @@
                 font-family: 'Indie Flower', cursive;
                 background-color: fuchsia;
                 margin: 0;
-                height: 100vh;
+                min-height: 100vh;
                 display: flex;
                 justify-content: center;
-                align-items: center;
+                align-items: flex-start;
+                padding: 24px;
             }
 
             .wrapper {
                 text-align: center;
+                width: 100%;
+                max-width: 900px;
             }
 
             input,
             select,
             button {
                 font-family: inherit;
-                font-size: 18px;
+                font-size: 16px;
                 margin: 5px;
-                padding: 5px;
-                border-radius: 10px;
+                padding: 6px 8px;
+                border-radius: 8px;
                 border: none;
             }
 
@@ -40,16 +43,47 @@
                 background-color: cyan;
             }
 
+            .calculations {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 12px;
+            }
+
+            .calc {
+                background: rgba(255, 255, 255, 0.9);
+                padding: 12px;
+                border-radius: 12px;
+                text-align: left;
+            }
+
+            .calc-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                justify-content: space-between;
+            }
+
+            .calc-controls {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-top: 8px;
+            }
+
             .container {
                 display: inline-block;
                 text-align: left;
+                width: 100%;
             }
 
             .line {
                 display: flex;
                 align-items: center;
-                margin-bottom: 5px;
-                justify-content: center;
+                margin-bottom: 6px;
+                gap: 6px;
+                justify-content: flex-start;
             }
 
             .line select {
@@ -57,42 +91,99 @@
             }
 
             .line input {
-                width: 80px;
+                width: 100px;
                 text-align: center;
             }
 
             .result {
-                font-size: 22px;
-                margin-top: 10px;
+                font-size: 18px;
+                margin-top: 8px;
+                font-weight: bold;
+            }
+
+            .collapse-hidden .collapse-target {
+                display: none;
+            }
+
+            .small {
+                padding: 6px 10px;
+                font-size: 14px;
+                border-radius: 8px;
+            }
+
+            .muted {
+                opacity: 0.8;
+                font-size: 14px;
+            }
+
+            .top-controls {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            #fileNameInput {
+                border: 1px solid #aaa;
+                border-radius: 8px;
+                padding: 6px 8px;
+                width: 200px;
+            }
+
+            .editable-title {
+                cursor: pointer;
+                padding: 2px 4px;
+                border-radius: 4px;
+            }
+
+            .editable-title:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+            }
+
+            .edit-title-input {
+                font-family: inherit;
+                font-size: 16px;
+                border-radius: 6px;
+                border: 1px solid #aaa;
+                padding: 2px 4px;
+                width: 180px;
             }
         </style>
     </head>
     <body>
         <div class="wrapper">
-            <input type="number" id="firstValue" placeholder="Enter number">
-            <br>
-            <button id="addBtn">Add Line</button>
-            <button id="undoBtn">Undo</button>
-            <button id="redoBtn">Redo</button>
-            <div class="container" id="lines"></div>
-            <br>
-            <button id="clearBtn">Clear All</button>
-            <button id="exportBtn">Export CSV</button>
-            <div class="result" id="result"></div>
+            <div class="top-controls">
+                <input id="fileNameInput" type="text" placeholder="File name (optional)">
+                <button id="addCalcBtn">Add Calculation</button>
+                <button id="undoBtn">Undo</button>
+                <button id="redoBtn">Redo</button>
+                <button id="exportAllBtn">Export All CSV</button>
+            </div>
+            <div class="calculations" id="calculations"></div>
+            <div class="muted" style="margin-top:12px"></div>
         </div>
         <script>
-            let lines = [];
+            let calculations = [];
             let history = [];
             let redoStack = [];
 
+            function uid() {
+                return Math.random().toString(36).slice(2, 9);
+            }
+
             function getCurrentStateObj() {
                 return {
-                    firstValue: document.getElementById('firstValue').value || '',
-                    lines: lines.map(line => ({
-                        operator: line.querySelector('select').value,
-                        value: line.querySelector('input').value || ''
-                    })),
-                    result: document.getElementById('result').textContent || ''
+                    calculations: calculations.map(calc => ({
+                        id: calc.id,
+                        customName: calc.customName || '',
+                        firstValue: calc.firstInput.value || '',
+                        lines: Array.from(calc.lines).map(line => ({
+                            operator: line.querySelector('select').value,
+                            value: line.querySelector('input').value || ''
+                        })),
+                        collapsed: calc.element.classList.contains('collapse-hidden')
+                    }))
                 };
             }
 
@@ -104,31 +195,184 @@
                 }
                 localStorage.setItem('mixedOpsState', stateStr);
                 redoStack = [];
-                updateUndoRedoButtons();
             }
 
             function restoreState(stateStr) {
                 if (!stateStr) return;
                 const data = JSON.parse(stateStr);
-                document.getElementById('firstValue').value = data.firstValue || '';
-                const container = document.getElementById('lines');
+                const container = document.getElementById('calculations');
                 container.innerHTML = '';
-                lines = [];
-                (data.lines || []).forEach(item => {
-                    const line = createLine(item.operator, item.value, false);
-                    container.appendChild(line);
-                    lines.push(line);
+                calculations = [];
+                (data.calculations || []).forEach(item => {
+                    const calc = createCalculation(item.id, false);
+                    calc.firstInput.value = item.firstValue || '';
+                    calc.lines.forEach(l => calc.lineContainer.removeChild(l));
+                    calc.lines = [];
+                    (item.lines || []).forEach(l => {
+                        const line = createLine(calc, l.operator, l.value, false);
+                        calc.lineContainer.appendChild(line);
+                        calc.lines.push(line);
+                    });
+                    if (item.collapsed) calc.element.classList.add('collapse-hidden');
+                    if (item.customName) {
+                        calc.customName = item.customName;
+                        calc.titleSpan.textContent = item.customName;
+                    }
+                    evaluateCalculation(calc);
+                    container.appendChild(calc.wrapper);
+                    calculations.push(calc);
                 });
-                document.getElementById('result').textContent = data.result || '';
-                evaluateExpression();
-                updateUndoRedoButtons();
+                if (calculations.length === 0) {
+                    const calc = createCalculation(undefined, false);
+                    container.appendChild(calc.wrapper);
+                    calculations.push(calc);
+                }
+                calculations.forEach(evaluateCalculation);
             }
 
-            function createLine(operatorValue = '*', inputValue = '', shouldPushHistory = true) {
+            function createCalculation(providedId, shouldPushHistory = true) {
+                const id = providedId || uid();
+                const element = document.createElement('div');
+                element.className = 'calc';
+                element.dataset.calcId = id;
+                const header = document.createElement('div');
+                header.className = 'calc-header';
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = `calc_${id}`;
+                titleSpan.className = 'editable-title';
+                let customName = '';
+                titleSpan.addEventListener('dblclick', () => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = titleSpan.textContent;
+                    input.className = 'edit-title-input';
+                    titleSpan.replaceWith(input);
+                    input.focus();
+                    input.addEventListener('blur', () => {
+                        const newName = input.value.trim();
+                        if (newName && newName !== `calc_${id}`) {
+                            customName = newName;
+                        } else {
+                            customName = '';
+                        }
+                        titleSpan.textContent = customName || `calc_${id}`;
+                        input.replaceWith(titleSpan);
+                        pushHistory();
+                    });
+                    input.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') input.blur();
+                    });
+                });
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                header.appendChild(titleSpan);
+                header.appendChild(resultDiv);
+                const firstValue = document.createElement('input');
+                firstValue.type = 'number';
+                firstValue.placeholder = 'Enter number';
+                const lineContainer = document.createElement('div');
+                lineContainer.className = 'container collapse-target';
+                const lines = [];
+                const collapseBtn = document.createElement('button');
+                collapseBtn.textContent = 'Collapse';
+                collapseBtn.className = 'small';
+                collapseBtn.addEventListener('click', () => {
+                    element.classList.toggle('collapse-hidden');
+                    pushHistory();
+                });
+                element.appendChild(header);
+                element.appendChild(firstValue);
+                element.appendChild(document.createElement('br'));
+                element.appendChild(lineContainer);
+                const underRow = document.createElement('div');
+                underRow.style.marginTop = '8px';
+                underRow.appendChild(collapseBtn);
+                element.appendChild(underRow);
+                const controls = document.createElement('div');
+                controls.className = 'calc-controls';
+                controls.style.textAlign = 'center';
+                controls.style.marginTop = '8px';
+                const addLineBtn = document.createElement('button');
+                addLineBtn.textContent = 'Add Line';
+                addLineBtn.className = 'small';
+                addLineBtn.addEventListener('click', () => {
+                    const line = createLine(calcObj, '^', '', true);
+                    lineContainer.appendChild(line);
+                    calcObj.lines.push(line);
+                    evaluateCalculation(calcObj);
+                    pushHistory();
+                });
+                const clearBtn = document.createElement('button');
+                clearBtn.textContent = 'Clear All';
+                clearBtn.className = 'small';
+                clearBtn.addEventListener('click', () => {
+                    const container = document.getElementById('calculations');
+                    if (calculations.length > 0) {
+                        const first = calculations[0];
+                        container.innerHTML = '';
+                        first.firstInput.value = '';
+                        first.lineContainer.innerHTML = '';
+                        first.lines = [createLine(first, '^', '', false)];
+                        first.lineContainer.appendChild(first.lines[0]);
+                        evaluateCalculation(first);
+                        container.appendChild(first.wrapper);
+                        calculations = [first];
+                        pushHistory();
+                    }
+                });
+                const removeCalcBtn = document.createElement('button');
+                removeCalcBtn.textContent = 'Remove Calculation';
+                removeCalcBtn.className = 'small';
+                removeCalcBtn.addEventListener('click', () => {
+                    const container = document.getElementById('calculations');
+                    if (calculations.length === 1) {
+                        firstValue.value = '';
+                        lineContainer.innerHTML = '';
+                        calcObj.lines = [createLine(calcObj, '^', '', false)];
+                        lineContainer.appendChild(calcObj.lines[0]);
+                        evaluateCalculation(calcObj);
+                        pushHistory();
+                        return;
+                    }
+                    container.removeChild(calcObj.wrapper);
+                    calculations = calculations.filter(c => c.id !== id);
+                    evaluateAll();
+                    pushHistory();
+                });
+                controls.appendChild(addLineBtn);
+                controls.appendChild(clearBtn);
+                controls.appendChild(removeCalcBtn);
+                const calcObj = {
+                    id,
+                    element,
+                    firstInput: firstValue,
+                    lineContainer,
+                    lines,
+                    resultDiv,
+                    titleSpan,
+                    wrapper: null,
+                    controls,
+                    customName
+                };
+                const initialLine = createLine(calcObj, '^', '', false);
+                lineContainer.appendChild(initialLine);
+                calcObj.lines.push(initialLine);
+                firstValue.addEventListener('input', () => {
+                    evaluateCalculation(calcObj);
+                    pushHistory();
+                });
+                const wrapper = document.createElement('div');
+                wrapper.appendChild(element);
+                wrapper.appendChild(controls);
+                calcObj.wrapper = wrapper;
+                return calcObj;
+            }
+
+            function createLine(calc, operatorValue = '*', inputValue = '', shouldPushHistory = true) {
                 const line = document.createElement('div');
                 line.className = 'line';
                 const operator = document.createElement('select');
-                ['^','*', '/', '+', '-'].forEach(op => {
+                ['^', '*', '/', '+', '-'].forEach(op => {
                     const o = document.createElement('option');
                     o.value = op;
                     o.textContent = op;
@@ -141,23 +385,21 @@
                 num.value = inputValue;
                 const remove = document.createElement('button');
                 remove.textContent = 'X';
+                remove.className = 'small';
                 operator.addEventListener('change', () => {
-                    evaluateExpression();
+                    evaluateCalculation(calc);
                     if (shouldPushHistory) pushHistory();
                 });
                 num.addEventListener('input', () => {
-                    evaluateExpression();
+                    evaluateCalculation(calc);
                     if (shouldPushHistory) pushHistory();
                 });
                 remove.addEventListener('click', () => {
-                    const parent = document.getElementById('lines');
-                    parent.removeChild(line);
-                    lines = lines.filter(l => l !== line);
-                    evaluateExpression();
-                    if (shouldPushHistory) {
-                        pushHistory();
-                        updateUndoRedoButtons();
-                    }
+                    const parent = calc.lineContainer;
+                    if (parent.contains(line)) parent.removeChild(line);
+                    calc.lines = calc.lines.filter(l => l !== line);
+                    evaluateCalculation(calc);
+                    if (shouldPushHistory) pushHistory();
                 });
                 line.appendChild(operator);
                 line.appendChild(num);
@@ -165,31 +407,45 @@
                 return line;
             }
 
-            function evaluateExpression() {
-                const firstValue = document.getElementById('firstValue').value;
+            function evaluateCalculation(calc) {
+                const firstValue = calc.firstInput.value;
                 if (firstValue === '') {
-                    document.getElementById('result').textContent = '';
+                    calc.resultDiv.textContent = '';
                     return {
                         expression: '',
                         result: ''
                     };
                 }
-                let expression = firstValue;
-                lines.forEach(line => {
-                    const op = line.querySelector('select').value;
-                    const val = line.querySelector('input').value;
-                    if (val !== '') expression += op + val;
-                });
+                const ops = calc.lines.map(line => ({
+                    op: line.querySelector('select').value,
+                    val: line.querySelector('input').value
+                })).filter(item => item.val !== '');
+                let prev = String(firstValue);
+                const parts = [];
+                for (let i = 0; i < ops.length; i++) {
+                    const {
+                        op,
+                        val
+                    } = ops[i];
+                    if (op === '*' || op === '/') {
+                        prev = `(${prev}${op}${val})`;
+                    } else {
+                        parts.push(prev);
+                        parts.push(op);
+                        prev = String(val);
+                    }
+                }
+                parts.push(prev);
+                const expression = parts.join('');
                 try {
                     const res = math.evaluate(expression);
-                    const text = `${expression} = ${res}`;
-                    document.getElementById('result').textContent = text;
+                    calc.resultDiv.textContent = `${expression} = ${res}`;
                     return {
                         expression,
                         result: res
                     };
-                } catch (e) {
-                    document.getElementById('result').textContent = 'Error in expression';
+                } catch {
+                    calc.resultDiv.textContent = 'Error in expression';
                     return {
                         expression,
                         result: 'Error'
@@ -197,14 +453,45 @@
                 }
             }
 
-            function addLine() {
-                const container = document.getElementById('lines');
-                const line = createLine('^', '', true);
-                container.appendChild(line);
-                lines.push(line);
-                evaluateExpression();
-                pushHistory();
+            function evaluateAll() {
+                calculations.forEach(evaluateCalculation);
             }
+            document.getElementById('addCalcBtn').addEventListener('click', () => {
+                const container = document.getElementById('calculations');
+                const calc = createCalculation(undefined, true);
+                container.appendChild(calc.wrapper);
+                calculations.push(calc);
+                evaluateCalculation(calc);
+                pushHistory();
+            });
+            document.getElementById('exportAllBtn').addEventListener('click', () => {
+                const rows = [];
+                calculations.forEach(calc => {
+                    const {
+                        expression,
+                        result
+                    } = evaluateCalculation(calc);
+                    if (expression) rows.push([
+                        calc.customName || `calc_${calc.id}`,
+                        expression,
+                        result
+                    ]);
+                });
+                if (rows.length === 0) return;
+                let csv = 'Calculation,Expression,Result\n';
+                rows.forEach(r => {
+                    csv += `"${r[0]}","${r[1]}","${r[2]}"\n`;
+                });
+                const blob = new Blob([csv], {
+                    type: 'text/csv'
+                });
+                const link = document.createElement('a');
+                const inputName = document.getElementById('fileNameInput').value.trim();
+                const fileName = inputName || `calculations_${new Date().toISOString().replace(/[:T]/g,'-').slice(0,19)}.csv`;
+                link.href = URL.createObjectURL(blob);
+                link.download = fileName;
+                link.click();
+            });
 
             function undo() {
                 if (history.length <= 1) return;
@@ -220,47 +507,17 @@
                 history.push(state);
                 restoreState(state);
                 localStorage.setItem('mixedOpsState', state);
-                updateUndoRedoButtons();
             }
-
-            function clearAll() {
-                document.getElementById('firstValue').value = '';
-                document.getElementById('lines').innerHTML = '';
-                lines = [];
-                document.getElementById('result').textContent = '';
-                evaluateExpression();
-                pushHistory();
-                updateUndoRedoButtons();
-            }
-
-            function exportCSV() {
-                const {
-                    expression,
-                    result
-                } = evaluateExpression();
-                if (!expression) return;
-                const csv = `Expression,Result\n"${expression}","${result}"`;
-                const blob = new Blob([csv], {
-                    type: 'text/csv'
-                });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'mixed_operations.csv';
-                link.click();
-            }
-
-            function updateUndoRedoButtons() {
-                document.getElementById('undoBtn').disabled = history.length <= 1;
-                document.getElementById('redoBtn').disabled = redoStack.length === 0;
-            }
-            document.getElementById('addBtn').addEventListener('click', addLine);
             document.getElementById('undoBtn').addEventListener('click', undo);
             document.getElementById('redoBtn').addEventListener('click', redo);
-            document.getElementById('clearBtn').addEventListener('click', clearAll);
-            document.getElementById('exportBtn').addEventListener('click', exportCSV);
-            document.getElementById('firstValue').addEventListener('input', () => {
-                evaluateExpression();
-                pushHistory();
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    undo();
+                    e.preventDefault();
+                } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                    redo();
+                    e.preventDefault();
+                }
             });
             window.addEventListener('load', () => {
                 const saved = localStorage.getItem('mixedOpsState');
@@ -268,10 +525,13 @@
                     restoreState(saved);
                     history = [saved];
                 } else {
-                    evaluateExpression();
+                    const container = document.getElementById('calculations');
+                    const calc = createCalculation(undefined, false);
+                    container.appendChild(calc.wrapper);
+                    calculations.push(calc);
+                    evaluateCalculation(calc);
                     pushHistory();
                 }
-                updateUndoRedoButtons();
             });
         </script>
     </body>
