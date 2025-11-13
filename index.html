@@ -1,254 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Factorization</title>
-  <link href="https://fonts.googleapis.com/css2?family=Gabarito&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Gabarito', sans-serif;
-      margin: 0;
-      background: linear-gradient(to right, turquoise, green, lightyellow);
-      font-size: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 800px;
-      text-align: center;
-    }
-    .input-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      gap: 10px;
-    }
-    button {
-      padding: 10px 24px;
-      background-color: lime;
-      color: black;
-      border: none;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.3s, color 0.3s;
-    }
-    button:hover {
-      background-color: red;
-      color: white;
-    }
-    textarea {
-      width: 100%;
-      font-size: 16px;
-      padding: 10px;
-      resize: none;
-    }
-    #resultsDiv {
-      width: 100%;
-      margin-top: 10px;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid black;
-      padding: 10px;
-      word-wrap: break-word;
-    }
-    .result-block {
-      margin-bottom: 10px;
-    }
-    .factor-list {
-      display: none;
-      margin-top: 5px;
-    }
-    .history-buttons {
-      display: flex;
-      gap: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="input-area">
-      <div class="history-buttons">
-        <button id="undoBtn">Undo</button>
-        <button id="redoBtn">Redo</button>
-      </div>
-      <button id="chooseFileBtn">Choose File</button>
-      <textarea id="inputArea" rows="10" placeholder="Paste or enter text here..."></textarea>
-      <button id="calcBtn">Calculate</button>
-      <button id="exportBtn">Export CSV</button>
-      <button id="clearBtn">Clear</button>
-    </div>
-    <div id="resultsDiv"></div>
-    <input type="file" id="fileInput" accept=".txt" style="display: none;">
-  </div>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Factorization</title>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Montserrat', sans-serif;
+                background: linear-gradient(to right, chartreuse, white);
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
 
-  <script>
-    const chooseFileBtn = document.getElementById('chooseFileBtn');
-    const fileInput = document.getElementById('fileInput');
-    const calcBtn = document.getElementById('calcBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const inputArea = document.getElementById('inputArea');
-    const resultsDiv = document.getElementById('resultsDiv');
-    const undoBtn = document.getElementById('undoBtn');
-    const redoBtn = document.getElementById('redoBtn');
+            .container {
+                background: white;
+                border: 2px solid black;
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 5px 5px 0 black;
+                width: 95%;
+                max-width: 600px;
+                height: 90vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                overflow: hidden;
+            }
 
-    let factorResults = [];
-    let history = [];
-    let redoStack = [];
-    let isRestoring = false;
+            h2 {
+                margin-bottom: 15px;
+            }
 
-    function saveState() {
-      if (isRestoring) return;
-      history.push({
-        input: inputArea.value,
-        results: JSON.stringify(factorResults)
-      });
-      if (history.length > 100) history.shift();
-      redoStack = [];
-    }
+            .toolbar {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
 
-    function restoreState(state) {
-      isRestoring = true;
-      inputArea.value = state.input;
-      factorResults = JSON.parse(state.results);
-      renderResults();
-      localStorage.setItem('factorInput', inputArea.value);
-      localStorage.setItem('factorResults', state.results);
-      isRestoring = false;
-    }
+            button,
+            label.upload {
+                background: black;
+                color: chartreuse;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 14px;
+                font-family: 'Montserrat', sans-serif;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+                font-size: 14px;
+            }
 
-    function undo() {
-      if (history.length > 1) {
-        const current = history.pop();
-        redoStack.push(current);
-        const previous = history[history.length - 1];
-        restoreState(previous);
-      }
-    }
+            button:hover,
+            label.upload:hover {
+                background: chartreuse;
+                color: black;
+            }
 
-    function redo() {
-      if (redoStack.length > 0) {
-        const state = redoStack.pop();
-        history.push(state);
-        restoreState(state);
-      }
-    }
+            input[type="file"] {
+                display: none;
+            }
 
-    window.addEventListener('load', () => {
-      const savedText = localStorage.getItem('factorInput');
-      const savedResults = localStorage.getItem('factorResults');
-      if (savedText) inputArea.value = savedText;
-      if (savedResults) factorResults = JSON.parse(savedResults);
-      renderResults();
-      saveState();
-    });
+            textarea {
+                width: 100%;
+                max-width: 500px;
+                min-height: 120px;
+                border: 2px solid black;
+                border-radius: 6px;
+                padding: 10px;
+                resize: vertical;
+                font-size: 15px;
+                font-family: 'Montserrat', sans-serif;
+            }
 
-    chooseFileBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        inputArea.value = event.target.result;
-        localStorage.setItem('factorInput', event.target.result);
-        saveState();
-      };
-      reader.readAsText(file);
-    });
+            label.option {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin: 10px 0;
+            }
 
-    function allFactors(n) {
-      if (isNaN(n) || n < 1) return [];
-      let factors = [];
-      for (let i = 1; i <= n; i++) {
-        if (n % i === 0) factors.push(i);
-      }
-      return factors;
-    }
+            #outputContainer {
+                margin-top: 12px;
+                border: 2px solid black;
+                border-radius: 8px;
+                padding: 8px;
+                text-align: left;
+                flex-grow: 1;
+                overflow-y: auto;
+                width: 100%;
+                max-width: 500px;
+            }
 
-    function renderResults() {
-      resultsDiv.innerHTML = '';
-      factorResults.forEach(item => {
-        const block = document.createElement('div');
-        block.className = 'result-block';
-        const summary = document.createElement('p');
-        summary.textContent = `Factors of ${item.number}:`;
-        block.appendChild(summary);
-        const toggleBtn = document.createElement('button');
-        toggleBtn.textContent = 'Show/Hide';
-        toggleBtn.style.marginBottom = '5px';
-        block.appendChild(toggleBtn);
-        const factorList = document.createElement('div');
-        factorList.className = 'factor-list';
-        factorList.innerHTML = item.factors
-          .map(f => `${f} → ${item.number} ÷ ${f} = ${item.number / f}`)
-          .join('<br>');
-        block.appendChild(factorList);
-        toggleBtn.addEventListener('click', () => {
-          factorList.style.display = factorList.style.display === 'none' ? 'block' : 'none';
-        });
-        resultsDiv.appendChild(block);
-      });
-    }
+            .result {
+                border-bottom: 1px solid #ddd;
+                padding: 6px 0;
+            }
 
-    calcBtn.addEventListener('click', () => {
-      const lines = inputArea.value.split('\n');
-      resultsDiv.innerHTML = '';
-      factorResults = [];
-      lines.forEach((line) => {
-        const num = parseInt(line.trim(), 10);
-        if (!isNaN(num) && line.trim() !== "") {
-          const factors = allFactors(num);
-          const calculations = factors.map(f => `${num} / ${f} = ${num / f}`);
-          factorResults.push({
-            number: num,
-            factors: factors,
-            calculations: calculations
-          });
-        }
-      });
-      localStorage.setItem('factorInput', inputArea.value);
-      localStorage.setItem('factorResults', JSON.stringify(factorResults));
-      renderResults();
-      saveState();
-    });
+            .result:last-child {
+                border-bottom: none;
+            }
 
-    exportBtn.addEventListener('click', () => {
-      if (factorResults.length === 0) return;
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Number,Factors,Calculations\n";
-      factorResults.forEach(item => {
-        const num = `'${item.number}`;
-        const factors = item.factors.length > 0 ? `'${item.factors[0]}, ${item.factors.slice(1).join(', ')}` : '';
-        const calculations = item.calculations.length > 0 ? `'${item.calculations[0]}; ${item.calculations.slice(1).join('; ')}` : '';
-        csvContent += `"${num}","${factors}","${calculations}"\n`;
-      });
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "factors.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
+            .factors {
+                display: none;
+                margin-top: 5px;
+                color: #222;
+                font-weight: 600;
+            }
 
-    clearBtn.addEventListener('click', () => {
-      inputArea.value = '';
-      resultsDiv.replaceChildren();
-      factorResults = [];
-      localStorage.removeItem('factorInput');
-      localStorage.removeItem('factorResults');
-      saveState();
-    });
+            .toggle {
+                background: black;
+                color: chartreuse;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 10px;
+                cursor: pointer;
+                font-size: 13px;
+                margin-top: 4px;
+            }
 
-    undoBtn.addEventListener('click', undo);
-    redoBtn.addEventListener('click', redo);
-  </script>
-</body>
+            .toggle:hover {
+                background: chartreuse;
+                color: black;
+            }
+
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+
+                #outputContainer,
+                #outputContainer * {
+                    visibility: visible;
+                }
+
+                #outputContainer {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    max-height: none;
+                    overflow: visible !important;
+                    border: none;
+                    box-shadow: none;
+                }
+
+                .factors {
+                    display: block !important;
+                }
+
+                .toggle {
+                    display: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Factorization</h2>
+            <div class="toolbar">
+                <label for="fileInput" class="upload">Choose File</label>
+                <input type="file" id="fileInput" accept=".txt,.csv">
+                <button onclick="clearAll()">Clear</button>
+                <button onclick="exportCSV()">Export CSV</button>
+                <button onclick="printPage()">Print</button>
+                <button onclick="undo()">Undo</button>
+                <button onclick="redo()">Redo</button>
+            </div>
+            <textarea id="nums" placeholder="Enter numbers (one per line)"></textarea>
+            <label class="option">
+                <input type="checkbox" id="primeOnly"> Prime only </label>
+            <button onclick="factorize()">Factorize</button>
+            <div id="outputContainer"></div>
+        </div>
+        <script>
+            let history = [],
+                historyIndex = -1;
+            const nums = document.getElementById("nums");
+            const primeOnlyCheckbox = document.getElementById("primeOnly");
+            const outputContainer = document.getElementById("outputContainer");
+            window.addEventListener("load", () => {
+                const savedNums = localStorage.getItem("nums");
+                const savedPrimeOnly = localStorage.getItem("primeOnly");
+                const savedHistory = localStorage.getItem("history");
+                const savedHistoryIndex = localStorage.getItem("historyIndex");
+                const savedToggles = localStorage.getItem("toggles");
+                const savedScroll = localStorage.getItem("scrollTop");
+                if (savedNums) nums.value = savedNums;
+                if (savedPrimeOnly) primeOnlyCheckbox.checked = savedPrimeOnly === "true";
+                if (savedHistory) history = JSON.parse(savedHistory);
+                if (savedHistoryIndex) historyIndex = parseInt(savedHistoryIndex);
+                if (!savedToggles) localStorage.setItem("toggles", "{}");
+                if (nums.value.trim()) factorize();
+                if (savedScroll) setTimeout(() => {
+                    outputContainer.scrollTop = parseInt(savedScroll);
+                }, 50);
+            });
+            nums.addEventListener("input", saveState);
+            primeOnlyCheckbox.addEventListener("change", () => {
+                saveOptions();
+                if (nums.value.trim()) factorize();
+            });
+
+            function saveState() {
+                if (historyIndex < history.length - 1) history = history.slice(0, historyIndex + 1);
+                history.push(nums.value);
+                historyIndex = history.length - 1;
+                localStorage.setItem("nums", nums.value);
+                localStorage.setItem("history", JSON.stringify(history));
+                localStorage.setItem("historyIndex", historyIndex);
+            }
+
+            function saveOptions() {
+                localStorage.setItem("primeOnly", primeOnlyCheckbox.checked);
+            }
+
+            function saveOutput() {
+                localStorage.setItem("output", outputContainer.innerHTML);
+            }
+
+            function saveToggles() {
+                const toggles = {};
+                outputContainer.querySelectorAll(".result").forEach(div => {
+                    const number = div.querySelector("div").textContent;
+                    const factorsDiv = div.querySelector(".factors");
+                    toggles[number] = factorsDiv.style.display === "block";
+                });
+                localStorage.setItem("toggles", JSON.stringify(toggles));
+            }
+
+            function saveScroll() {
+                localStorage.setItem("scrollTop", outputContainer.scrollTop);
+            }
+
+            function undo() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    nums.value = history[historyIndex];
+                    localStorage.setItem("nums", nums.value);
+                    localStorage.setItem("historyIndex", historyIndex);
+                    factorize();
+                }
+            }
+
+            function redo() {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    nums.value = history[historyIndex];
+                    localStorage.setItem("nums", nums.value);
+                    localStorage.setItem("historyIndex", historyIndex);
+                    factorize();
+                }
+            }
+
+            function clearAll() {
+                nums.value = "";
+                outputContainer.innerHTML = "";
+                saveState();
+                saveOutput();
+                localStorage.setItem("toggles", "{}");
+                localStorage.setItem("scrollTop", 0);
+            }
+
+            function printPage() {
+                document.querySelectorAll('.factors').forEach(f => f.style.display = 'block');
+                document.querySelectorAll('.toggle').forEach(b => b.textContent = 'Hide');
+                window.print();
+            }
+
+            function exportCSV() {
+                const output = outputContainer.innerText.trim();
+                if (!output) return alert("Nothing to export.");
+                const blob = new Blob([output], {
+                    type: "text/csv"
+                });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "factors.csv";
+                a.click();
+            }
+            document.getElementById("fileInput").addEventListener("change", e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    nums.value = ev.target.result;
+                    saveState();
+                    factorize();
+                };
+                reader.readAsText(file);
+            });
+
+            function primeFactorization(n) {
+                const res = [];
+                if (n === 1) return [{ p: 1, e: 1 }];
+                let num = n;
+                for (let p = 2; p * p <= num; p++) {
+                    if (num % p === 0) {
+                        let e = 0;
+                        while (num % p === 0) {
+                            num = Math.floor(num / p);
+                            e++;
+                        }
+                        res.push({ p, e });
+                    }
+                }
+                if (num > 1) res.push({ p: num, e: 1 });
+                return res;
+            }
+
+            function factorize() {
+                const lines = nums.value.trim().split(/\n+/);
+                const primeOnly = primeOnlyCheckbox.checked;
+                const savedToggles = JSON.parse(localStorage.getItem("toggles") || "{}");
+                outputContainer.innerHTML = "";
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    const n = parseInt(trimmed);
+                    const resultDiv = document.createElement("div");
+                    resultDiv.className = "result";
+                    if (isNaN(n) || n < 1) {
+                        resultDiv.textContent = `Invalid: "${line}"`;
+                        outputContainer.appendChild(resultDiv);
+                        continue;
+                    }
+
+                    const title = document.createElement("div");
+                    title.textContent = `${n}`;
+                    resultDiv.appendChild(title);
+
+                    const btn = document.createElement("button");
+                    btn.className = "toggle";
+
+                    const factorsDiv = document.createElement("div");
+                    factorsDiv.className = "factors";
+
+                    if (primeOnly) {
+                        if (n === 1) {
+                            factorsDiv.innerHTML = "1";
+                        } else {
+                            const pf = primeFactorization(n);
+                            const parts = pf.map(({ p, e }) => {
+                                if (e > 1) return `${p}<sup>${e}</sup>`;
+                                return `${p}`;
+                            });
+                            const html = parts.join(" × ");
+                            factorsDiv.innerHTML = html;
+                            factorsDiv.setAttribute("data-plain", pf.map(({ p, e }) => e > 1 ? `${p}^${e}` : `${p}`).join(" * "));
+                        }
+                    } else {
+                        const divisors = [];
+                        for (let i = 1; i <= n; i++) {
+                            if (n % i === 0) divisors.push(i);
+                        }
+                        factorsDiv.textContent = divisors.join(", ");
+                    }
+
+                    const expanded = savedToggles[n] || false;
+                    factorsDiv.style.display = expanded ? "block" : "none";
+                    btn.textContent = expanded ? "Hide" : "Show";
+                    btn.onclick = () => {
+                        const visible = factorsDiv.style.display === "block";
+                        factorsDiv.style.display = visible ? "none" : "block";
+                        btn.textContent = visible ? "Show" : "Hide";
+                        saveToggles();
+                        saveScroll();
+                    };
+                    resultDiv.appendChild(btn);
+                    resultDiv.appendChild(factorsDiv);
+                    outputContainer.appendChild(resultDiv);
+                }
+                saveOutput();
+                saveToggles();
+                const savedScroll = localStorage.getItem("scrollTop");
+                if (savedScroll) outputContainer.scrollTop = parseInt(savedScroll);
+                outputContainer.onscroll = saveScroll;
+            }
+
+            function isPrime(num) {
+                if (num < 2) return false;
+                for (let i = 2; i * i <= num; i++) {
+                    if (num % i === 0) return false;
+                }
+                return true;
+            }
+        </script>
+    </body>
 </html>
