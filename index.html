@@ -30,12 +30,48 @@
       overflow-y: auto;
     }
 
+    .header-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+
+    .header-spacer {
+      width: 110px;
+    }
+
     .row {
       display: flex;
       justify-content: center;
       align-items: center;
       margin-bottom: 12px;
       gap: 12px;
+      width: 100%;
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 110px;
+    }
+
+    .file-btn {
+      font-family: Georgia, serif;
+      font-size: 0.9em;
+      padding: 4px 8px;
+      background: #e6e6fa;
+      border: 1.2px solid black;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .file-input {
+      display: none;
     }
 
     .number-input {
@@ -88,14 +124,32 @@
 
     @media(max-width:600px) {
       .container, .results-box { max-width: 98vw; }
-      .row { flex-direction: column; gap: 8px; }
+      .row { flex-direction: column; gap: 8px; align-items: center; }
       .results-box { font-size: 1em; }
+      .input-wrapper { width: 90%; }
+      .header-row { flex-direction: column; gap: 6px; }
+      .header-spacer { width: 100%; height: 0; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="header-row" id="headerRow">
+      <div class="input-wrapper" style="align-items:center;">
+        <button id="base-file-btn" class="file-btn" type="button">Choose Base File</button>
+        <input id="base-file-input" class="file-input" type="file" accept=".txt,.csv,text/plain" />
+      </div>
+
+      <div class="header-spacer"></div>
+
+      <div class="input-wrapper" style="align-items:center;">
+        <button id="end-file-btn" class="file-btn" type="button">Choose End File</button>
+        <input id="end-file-input" class="file-input" type="file" accept=".txt,.csv,text/plain" />
+      </div>
+    </div>
+
     <div id="rows-container"></div>
+
     <div>
       <button id="add-row-btn">Add Row</button>
       <button id="clear-btn">Clear</button>
@@ -105,6 +159,7 @@
     </div>
     <div class="results-box" id="resultsBox"></div>
   </div>
+
   <script>
     const STORAGE_KEY = "summation-app-data";
     const rowsContainer = document.getElementById('rows-container');
@@ -114,6 +169,11 @@
     const undoBtn = document.getElementById('undo-btn');
     const redoBtn = document.getElementById('redo-btn');
     const resultsBox = document.getElementById('resultsBox');
+
+    const baseFileBtn = document.getElementById('base-file-btn');
+    const baseFileInput = document.getElementById('base-file-input');
+    const endFileBtn = document.getElementById('end-file-btn');
+    const endFileInput = document.getElementById('end-file-input');
 
     let history = [];
     let historyIndex = -1;
@@ -223,35 +283,127 @@
     function createRow(base = null, end = null) {
       const row = document.createElement('div');
       row.className = 'row';
+
+      const baseWrapper = document.createElement('div');
+      baseWrapper.className = 'input-wrapper';
       const input1 = document.createElement('input');
       input1.type = 'number';
       input1.className = 'number-input base-input';
       input1.placeholder = 'Base (start)';
+      input1.value = (base === null || base === undefined) ? '' : base;
+      baseWrapper.append(input1);
+
+      const endWrapper = document.createElement('div');
+      endWrapper.className = 'input-wrapper';
       const input2 = document.createElement('input');
       input2.type = 'number';
       input2.className = 'number-input end-input';
       input2.placeholder = 'End (inclusive)';
+      input2.value = (end === null || end === undefined) ? '' : end;
+      endWrapper.append(input2);
+
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
-      input1.value = (base === null || base === undefined) ? '' : base;
-      input2.value = (end === null || end === undefined) ? '' : end;
-      if (!input1.dataset.listenerAttached) {
-        input1.addEventListener('input', handleChange);
-        input1.dataset.listenerAttached = '1';
-      }
-      if (!input2.dataset.listenerAttached) {
-        input2.addEventListener('input', handleChange);
-        input2.dataset.listenerAttached = '1';
-      }
-      if (!deleteBtn.dataset.listenerAttached) {
-        deleteBtn.addEventListener('click', () => {
-          row.remove();
-          handleChange();
-        });
-        deleteBtn.dataset.listenerAttached = '1';
-      }
-      row.append(input1, input2, deleteBtn);
+      deleteBtn.addEventListener('click', () => {
+        row.remove();
+        handleChange();
+      });
+
+      input1.addEventListener('input', handleChange);
+      input2.addEventListener('input', handleChange);
+
+      row.append(baseWrapper, endWrapper, deleteBtn);
       return row;
+    }
+
+    function parseLineToPair(line) {
+      const trimmed = line.trim();
+      if (trimmed === '') return null;
+      let tokens = trimmed.split(/[\t, ]+/).filter(Boolean);
+      if (tokens.length === 1 && tokens[0].includes('-')) {
+        tokens = tokens[0].split('-').map(s => s.trim()).filter(Boolean);
+      }
+      const nums = tokens.map(t => {
+        const n = parseInt(t, 10);
+        return isNaN(n) ? null : n;
+      });
+      if (nums.length >= 2 && nums[0] !== null && nums[1] !== null) {
+        return { base: nums[0], end: nums[1] };
+      }
+      if (nums.length === 1 && nums[0] !== null) {
+        return { value: nums[0] };
+      }
+      return null;
+    }
+
+    function handleGlobalFileImport(e, type) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        let startIndex = 0;
+        if (lines.length > 0) {
+          const first = lines[0].toLowerCase();
+          if (first.includes('base') || first.includes('start') || first.includes('end')) {
+            startIndex = 1;
+          }
+        }
+
+        const parsedLines = [];
+        for (let i = startIndex; i < lines.length; i++) {
+          const parsed = parseLineToPair(lines[i]);
+          if (parsed) parsedLines.push(parsed);
+        }
+
+        if (parsedLines.length === 0) {
+          alert('No valid numeric lines found in file.');
+          e.target.value = '';
+          return;
+        }
+
+        const pairs = parsedLines.filter(p => p.base !== undefined && p.end !== undefined);
+        const singles = parsedLines.filter(p => p.value !== undefined);
+
+        pairs.forEach(p => {
+          rowsContainer.appendChild(createRow(p.base, p.end));
+        });
+
+        if (singles.length > 0) {
+          const values = singles.map(s => s.value);
+          const remaining = [...values];
+
+          const currentRows = Array.from(rowsContainer.querySelectorAll('.row'));
+          for (let i = 0; i < currentRows.length && remaining.length > 0; i++) {
+            const row = currentRows[i];
+            const input = (type === 'base') ? row.querySelector('.base-input') : row.querySelector('.end-input');
+            if (input.value === '') {
+              input.value = remaining.shift();
+            }
+          }
+
+          while (remaining.length > 0) {
+            const v = remaining.shift();
+            if (type === 'base') {
+              rowsContainer.appendChild(createRow(v, null));
+            } else {
+              rowsContainer.appendChild(createRow(null, v));
+            }
+          }
+        }
+
+        handleChange();
+
+        e.target.value = '';
+        if (rowsContainer.lastElementChild) {
+          rowsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      };
+      reader.onerror = () => {
+        alert('Failed to read file.');
+      };
+      reader.readAsText(file);
     }
 
     function handleChange() {
@@ -349,6 +501,11 @@
         }
       });
     }
+
+    baseFileBtn.addEventListener('click', () => baseFileInput.click());
+    baseFileInput.addEventListener('change', (e) => handleGlobalFileImport(e, 'base'));
+    endFileBtn.addEventListener('click', () => endFileInput.click());
+    endFileInput.addEventListener('change', (e) => handleGlobalFileImport(e, 'end'));
 
     addRowBtn.addEventListener('click', () => {
       rowsContainer.appendChild(createRow());
