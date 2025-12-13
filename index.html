@@ -352,7 +352,7 @@ function factorize() {
             for (let i = 1; i <= n; i++) {
                 if (n % i === 0) divisors.push(i);
             }
-            factorsDiv.textContent = divisors.join(", ");
+            factorsDiv.textContent = divisors.join("; ");
             factorsDiv.setAttribute("data-plain", divisors.join("; "));
         }
 
