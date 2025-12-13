@@ -353,7 +353,7 @@ function factorize() {
                 if (n % i === 0) divisors.push(i);
             }
             factorsDiv.textContent = divisors.join(", ");
-            factorsDiv.setAttribute("data-plain", divisors.join(" * "));
+            factorsDiv.setAttribute("data-plain", divisors.join(", "));
         }
 
         const expanded = savedToggles[n] || false;
