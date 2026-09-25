@@ -1,145 +1,891 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Order Of Operations</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"></script>
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
-
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
-
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
-
-    .read {
-      color: red;
-    }
-
-    .unread {
-      color: blue;
-    }
-
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
-
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
-
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
-
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
-
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
-
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
+    <style>
+        body {
+            font-family: 'Indie Flower', cursive;
+            background-color: fuchsia;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px;
         }
-      });
-    });
-  </script>
+
+        .wrapper {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        input,
+        select,
+        button {
+            font-family: inherit;
+            font-size: 16px;
+            margin: 5px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            cursor: pointer;
+            background: white;
+        }
+
+        button:hover {
+            background-color: cyan;
+        }
+
+        .calculations {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .calc {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .calc-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .calc-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .container {
+            display: inline-block;
+            text-align: left;
+            width: 100%;
+        }
+
+        .line {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 6px;
+            justify-content: flex-start;
+        }
+
+        .line select {
+            width: 60px;
+        }
+
+        .line input {
+            width: 100px;
+            text-align: center;
+        }
+
+        .expression-input {
+            width: calc(100% - 20px);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .result {
+            font-size: 18px;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .collapse-hidden .collapse-target {
+            display: none;
+        }
+
+        .small {
+            padding: 6px 10px;
+            font-size: 14px;
+            border-radius: 8px;
+        }
+
+        .muted {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .top-controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        #fileNameInput {
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            padding: 6px 8px;
+            width: 200px;
+        }
+
+        .editable-title {
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .editable-title:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-title-input {
+            font-family: inherit;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #aaa;
+            padding: 2px 4px;
+            width: 180px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+
+        <div class="top-controls">
+            <input id="fileNameInput" type="text" placeholder="File name (optional)">
+            <button id="addCalcBtn">Add Calculation</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+            <button id="exportAllBtn">Export All CSV</button>
+        </div>
+
+        <div class="calculations" id="calculations"></div>
+
+        <div class="muted" style="margin-top:12px"></div>
+    </div>
+
+    <script>
+        let calculations = [];
+        let history = [];
+        let redoStack = [];
+
+        function uid() {
+            return Math.random().toString(36).slice(2, 9);
+        }
+
+        function getCurrentStateObj() {
+            return {
+                calculations: calculations.map(calc => ({
+                    id: calc.id,
+                    customName: calc.customName || '',
+                    firstValue: calc.firstInput.value || '',
+                    lines: Array.from(calc.lines).map(line => ({
+                        operator: line.querySelector('select').value,
+                        value: line.querySelector('input').value || ''
+                    })),
+                    collapsed: calc.element.classList.contains('collapse-hidden')
+                }))
+            };
+        }
+
+        function pushHistory() {
+            const stateStr = JSON.stringify(getCurrentStateObj());
+
+            if (
+                history.length === 0 ||
+                history[history.length - 1] !== stateStr
+            ) {
+                history.push(stateStr);
+
+                if (history.length > 200) {
+                    history.shift();
+                }
+            }
+
+            localStorage.setItem('mixedOpsState', stateStr);
+            redoStack = [];
+        }
+
+        function restoreState(stateStr) {
+            if (!stateStr) return;
+
+            const data = JSON.parse(stateStr);
+            const container = document.getElementById('calculations');
+
+            container.innerHTML = '';
+            calculations = [];
+
+            (data.calculations || []).forEach(item => {
+
+                const calc = createCalculation(item.id, false);
+
+                calc.firstInput.value = item.firstValue || '';
+
+                calc.lines.forEach(line => {
+                    if (calc.lineContainer.contains(line)) {
+                        calc.lineContainer.removeChild(line);
+                    }
+                });
+
+                calc.lines = [];
+
+                (item.lines || []).forEach(lineData => {
+
+                    const line = createLine(
+                        calc,
+                        lineData.operator,
+                        lineData.value,
+                        false
+                    );
+
+                    calc.lineContainer.appendChild(line);
+                    calc.lines.push(line);
+                });
+
+                if (item.collapsed) {
+                    calc.element.classList.add('collapse-hidden');
+                }
+
+                if (item.customName) {
+                    calc.customName = item.customName;
+                    calc.titleSpan.textContent = item.customName;
+                }
+
+                evaluateCalculation(calc);
+
+                container.appendChild(calc.wrapper);
+                calculations.push(calc);
+            });
+
+            if (calculations.length === 0) {
+                const calc = createCalculation(undefined, false);
+
+                container.appendChild(calc.wrapper);
+                calculations.push(calc);
+            }
+
+            calculations.forEach(evaluateCalculation);
+        }
+
+        function createCalculation(
+            providedId,
+            shouldPushHistory = true
+        ) {
+            const id = providedId || uid();
+
+            const element = document.createElement('div');
+            element.className = 'calc';
+            element.dataset.calcId = id;
+
+            const header = document.createElement('div');
+            header.className = 'calc-header';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = `calc_${id}`;
+            titleSpan.className = 'editable-title';
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+
+            header.appendChild(titleSpan);
+            header.appendChild(resultDiv);
+
+            const firstValue = document.createElement('input');
+
+            firstValue.type = 'text';
+            firstValue.placeholder = 'Enter expression, then press Enter';
+            firstValue.className = 'expression-input';
+
+            const lineContainer = document.createElement('div');
+            lineContainer.className = 'container collapse-target';
+
+            const lines = [];
+
+            const collapseBtn = document.createElement('button');
+            collapseBtn.textContent = 'Collapse';
+            collapseBtn.className = 'small';
+
+            collapseBtn.addEventListener('click', () => {
+                element.classList.toggle('collapse-hidden');
+                pushHistory();
+            });
+
+            element.appendChild(header);
+            element.appendChild(firstValue);
+            element.appendChild(document.createElement('br'));
+            element.appendChild(lineContainer);
+
+            const underRow = document.createElement('div');
+            underRow.style.marginTop = '8px';
+            underRow.appendChild(collapseBtn);
+
+            element.appendChild(underRow);
+
+            const controls = document.createElement('div');
+            controls.className = 'calc-controls';
+            controls.style.textAlign = 'center';
+            controls.style.marginTop = '8px';
+
+            const addLineBtn = document.createElement('button');
+
+            addLineBtn.textContent = 'Add Line';
+            addLineBtn.className = 'small';
+
+            addLineBtn.addEventListener('click', () => {
+
+                const line = createLine(
+                    calcObj,
+                    '^',
+                    '',
+                    true
+                );
+
+                lineContainer.appendChild(line);
+                calcObj.lines.push(line);
+
+                evaluateCalculation(calcObj);
+                pushHistory();
+            });
+
+            const clearBtn = document.createElement('button');
+
+            clearBtn.textContent = 'Clear All';
+            clearBtn.className = 'small';
+
+            clearBtn.addEventListener('click', () => {
+
+                const container =
+                    document.getElementById('calculations');
+
+                if (calculations.length > 0) {
+
+                    const first = calculations[0];
+
+                    container.innerHTML = '';
+
+                    first.firstInput.value = '';
+                    first.lineContainer.innerHTML = '';
+
+                    first.lines = [];
+
+                    const initialLine =
+                        createLine(first, '^', '', false);
+
+                    first.lines.push(initialLine);
+                    first.lineContainer.appendChild(initialLine);
+
+                    evaluateCalculation(first);
+
+                    container.appendChild(first.wrapper);
+
+                    calculations = [first];
+
+                    pushHistory();
+                }
+            });
+
+            const removeCalcBtn = document.createElement('button');
+
+            removeCalcBtn.textContent = 'Remove Calculation';
+            removeCalcBtn.className = 'small';
+
+            removeCalcBtn.addEventListener('click', () => {
+
+                const container =
+                    document.getElementById('calculations');
+
+                if (calculations.length === 1) {
+
+                    firstValue.value = '';
+                    lineContainer.innerHTML = '';
+
+                    calcObj.lines = [];
+
+                    const initialLine =
+                        createLine(calcObj, '^', '', false);
+
+                    calcObj.lines.push(initialLine);
+                    lineContainer.appendChild(initialLine);
+
+                    evaluateCalculation(calcObj);
+                    pushHistory();
+
+                    return;
+                }
+
+                container.removeChild(calcObj.wrapper);
+
+                calculations =
+                    calculations.filter(c => c.id !== id);
+
+                evaluateAll();
+                pushHistory();
+            });
+
+            controls.appendChild(addLineBtn);
+            controls.appendChild(clearBtn);
+            controls.appendChild(removeCalcBtn);
+
+            const calcObj = {
+                id,
+                element,
+                firstInput: firstValue,
+                lineContainer,
+                lines,
+                resultDiv,
+                titleSpan,
+                wrapper: null,
+                controls,
+                customName: '',
+                parsed: false
+            };
+
+            titleSpan.addEventListener('dblclick', () => {
+
+                const input = document.createElement('input');
+
+                input.type = 'text';
+                input.value = titleSpan.textContent;
+                input.className = 'edit-title-input';
+
+                titleSpan.replaceWith(input);
+
+                input.focus();
+
+                input.addEventListener('blur', () => {
+
+                    const newName = input.value.trim();
+
+                    if (
+                        newName &&
+                        newName !== `calc_${id}`
+                    ) {
+                        calcObj.customName = newName;
+                    } else {
+                        calcObj.customName = '';
+                    }
+
+                    titleSpan.textContent =
+                        calcObj.customName || `calc_${id}`;
+
+                    input.replaceWith(titleSpan);
+
+                    pushHistory();
+                });
+
+                input.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    }
+                });
+            });
+
+            firstValue.addEventListener('keydown', e => {
+
+                if (e.key !== 'Enter') {
+                    return;
+                }
+
+                e.preventDefault();
+
+                parseExpressionIntoLines(calcObj);
+            });
+
+            firstValue.addEventListener('input', () => {
+
+                if (calcObj.parsed) {
+                    evaluateCalculation(calcObj);
+                    pushHistory();
+                }
+            });
+
+            const wrapper = document.createElement('div');
+
+            wrapper.appendChild(element);
+            wrapper.appendChild(controls);
+
+            calcObj.wrapper = wrapper;
+
+            return calcObj;
+        }
+
+        function parseExpressionIntoLines(calc) {
+
+            let expression = calc.firstInput.value.trim();
+
+            if (!expression) {
+                return;
+            }
+
+            expression = expression.replace(/\s+/g, '');
+
+            const matches =
+                expression.match(
+                    /^([+-]?(?:\d*\.?\d+))((?:[\^*/+-](?:\d*\.?\d+))*)$/
+                );
+
+            if (!matches) {
+
+                calc.resultDiv.textContent =
+                    'Invalid expression';
+
+                return;
+            }
+
+            const firstNumber = matches[1];
+            const remainder = matches[2];
+
+            const operationMatches =
+                remainder.match(
+                    /([\^*/+-])(\d*\.?\d+)/g
+                ) || [];
+
+            calc.firstInput.value = firstNumber;
+
+            calc.lineContainer.innerHTML = '';
+            calc.lines = [];
+
+            operationMatches.forEach(operation => {
+
+                const operator = operation[0];
+                const value = operation.slice(1);
+
+                const line = createLine(
+                    calc,
+                    operator,
+                    value,
+                    false
+                );
+
+                calc.lineContainer.appendChild(line);
+                calc.lines.push(line);
+            });
+
+            calc.parsed = true;
+
+            evaluateCalculation(calc);
+            pushHistory();
+        }
+
+        function createLine(
+            calc,
+            operatorValue = '*',
+            inputValue = '',
+            shouldPushHistory = true
+        ) {
+
+            const line = document.createElement('div');
+            line.className = 'line';
+
+            const operator = document.createElement('select');
+
+            ['^', '*', '/', '+', '-'].forEach(op => {
+
+                const option =
+                    document.createElement('option');
+
+                option.value = op;
+                option.textContent = op;
+
+                if (op === operatorValue) {
+                    option.selected = true;
+                }
+
+                operator.appendChild(option);
+            });
+
+            const num = document.createElement('input');
+
+            num.type = 'number';
+            num.placeholder = 'Value';
+            num.value = inputValue;
+
+            const remove = document.createElement('button');
+
+            remove.textContent = 'X';
+            remove.className = 'small';
+
+            operator.addEventListener('change', () => {
+
+                evaluateCalculation(calc);
+
+                if (shouldPushHistory) {
+                    pushHistory();
+                }
+            });
+
+            num.addEventListener('input', () => {
+
+                evaluateCalculation(calc);
+
+                if (shouldPushHistory) {
+                    pushHistory();
+                }
+            });
+
+            remove.addEventListener('click', () => {
+
+                const parent = calc.lineContainer;
+
+                if (parent.contains(line)) {
+                    parent.removeChild(line);
+                }
+
+                calc.lines =
+                    calc.lines.filter(l => l !== line);
+
+                evaluateCalculation(calc);
+
+                if (shouldPushHistory) {
+                    pushHistory();
+                }
+            });
+
+            line.appendChild(operator);
+            line.appendChild(num);
+            line.appendChild(remove);
+
+            return line;
+        }
+
+        function evaluateCalculation(calc) {
+
+            const firstValue =
+                calc.firstInput.value.trim();
+
+            if (firstValue === '') {
+
+                calc.resultDiv.textContent = '';
+
+                return {
+                    expression: '',
+                    result: ''
+                };
+            }
+
+            const ops =
+                calc.lines
+                    .map(line => ({
+                        op: line.querySelector('select').value,
+                        val: line.querySelector('input').value
+                    }))
+                    .filter(item => item.val !== '');
+
+            let expression = firstValue;
+
+            ops.forEach(item => {
+                expression += item.op + item.val;
+            });
+
+            try {
+
+                const res = math.evaluate(expression);
+
+                calc.resultDiv.textContent =
+                    `${expression} = ${res}`;
+
+                return {
+                    expression,
+                    result: res
+                };
+
+            } catch {
+
+                calc.resultDiv.textContent =
+                    'Error in expression';
+
+                return {
+                    expression,
+                    result: 'Error'
+                };
+            }
+        }
+
+        function evaluateAll() {
+            calculations.forEach(evaluateCalculation);
+        }
+
+        document
+            .getElementById('addCalcBtn')
+            .addEventListener('click', () => {
+
+                const container =
+                    document.getElementById('calculations');
+
+                const calc =
+                    createCalculation(undefined, true);
+
+                container.appendChild(calc.wrapper);
+                calculations.push(calc);
+
+                evaluateCalculation(calc);
+                pushHistory();
+            });
+
+        document
+            .getElementById('exportAllBtn')
+            .addEventListener('click', () => {
+
+                const rows = [];
+
+                calculations.forEach(calc => {
+
+                    const {
+                        expression,
+                        result
+                    } = evaluateCalculation(calc);
+
+                    if (expression) {
+
+                        rows.push([
+                            calc.customName ||
+                                `calc_${calc.id}`,
+                            expression,
+                            result
+                        ]);
+                    }
+                });
+
+                if (rows.length === 0) {
+                    return;
+                }
+
+                let csv =
+                    'Calculation,Expression,Result\n';
+
+                rows.forEach(r => {
+
+                    csv +=
+                        `"${r[0]}","${r[1]}","${r[2]}"\n`;
+                });
+
+                const blob =
+                    new Blob([csv], {
+                        type: 'text/csv'
+                    });
+
+                const link =
+                    document.createElement('a');
+
+                const inputName =
+                    document
+                        .getElementById('fileNameInput')
+                        .value
+                        .trim();
+
+                const fileName =
+                    inputName ||
+                    `calculations_${new Date()
+                        .toISOString()
+                        .replace(/[:T]/g, '-')
+                        .slice(0, 19)}.csv`;
+
+                link.href =
+                    URL.createObjectURL(blob);
+
+                link.download = fileName;
+
+                link.click();
+            });
+
+        function undo() {
+
+            if (history.length <= 1) {
+                return;
+            }
+
+            const current = history.pop();
+
+            redoStack.push(current);
+
+            const previous =
+                history[history.length - 1];
+
+            restoreState(previous);
+        }
+
+        function redo() {
+
+            if (redoStack.length === 0) {
+                return;
+            }
+
+            const state = redoStack.pop();
+
+            history.push(state);
+
+            restoreState(state);
+
+            localStorage.setItem(
+                'mixedOpsState',
+                state
+            );
+        }
+
+        document
+            .getElementById('undoBtn')
+            .addEventListener('click', undo);
+
+        document
+            .getElementById('redoBtn')
+            .addEventListener('click', redo);
+
+        document.addEventListener('keydown', e => {
+
+            if (
+                (e.ctrlKey || e.metaKey) &&
+                e.key === 'z'
+            ) {
+                undo();
+                e.preventDefault();
+
+            } else if (
+                (e.ctrlKey || e.metaKey) &&
+                e.key === 'y'
+            ) {
+                redo();
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('load', () => {
+
+            const saved =
+                localStorage.getItem('mixedOpsState');
+
+            if (saved) {
+
+                restoreState(saved);
+                history = [saved];
+
+            } else {
+
+                const container =
+                    document.getElementById('calculations');
+
+                const calc =
+                    createCalculation(undefined, false);
+
+                container.appendChild(calc.wrapper);
+
+                calculations.push(calc);
+
+                evaluateCalculation(calc);
+
+                pushHistory();
+            }
+        });
+    </script>
 </body>
 </html>
