@@ -1,145 +1,450 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Calculator</title>
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
-
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
-
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
-
-    .read {
-      color: gray;
-    }
-
-    .unread {
-      color: blue;
-    }
-
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
-
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
-
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
-
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
-
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
-
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            font-family: Arial, sans-serif;
         }
-      });
-    });
-  </script>
+
+        .calculator {
+            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+            border-radius: 12px;
+            box-shadow:
+                0 10px 25px rgba(0, 0, 0, 0.8),
+                inset 0 1px 2px rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            width: 90%;
+            max-width: 320px;
+            border: 1px solid #333;
+        }
+
+        #display {
+            width: 100%;
+            height: 55px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            padding: 5px 10px;
+            border: 2px solid #444;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: #00ff00;
+            font-family: "Courier New", monospace;
+            font-size: 26px;
+            text-align: right;
+            outline: none;
+            caret-color: #00ff00;
+            box-shadow:
+                inset 0 3px 6px rgba(0, 0, 0, 0.6),
+                0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        #display:focus {
+            border-color: #00ff00;
+            box-shadow:
+                inset 0 3px 6px rgba(0, 0, 0, 0.6),
+                0 0 8px rgba(0, 255, 0, 0.4);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            height: 50px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: linear-gradient(145deg, #404040, #2a2a2a);
+            color: #e0e0e0;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 5px 8px rgba(0, 0, 0, 0.5);
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #4a4a4a, #343434);
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 5px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow:
+                0 0 0 #1a1a1a,
+                0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .clear {
+            background: linear-gradient(145deg, #7e2929, #5a1f1f);
+            color: #ff6b6b;
+        }
+
+        .clear:hover {
+            background: linear-gradient(145deg, #913333, #6b2424);
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 5px 10px rgba(255, 107, 107, 0.3);
+        }
+
+        .operator {
+            background: linear-gradient(145deg, #5a5a3a, #3d3d28);
+            color: #ffcc00;
+        }
+
+        .operator:hover {
+            background: linear-gradient(145deg, #6b6b47, #4a4a33);
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 5px 10px rgba(255, 204, 0, 0.2);
+        }
+
+        .equals {
+            background: linear-gradient(145deg, #2d5a3d, #1f3d2a);
+            color: #4ade80;
+        }
+
+        .equals:hover {
+            background: linear-gradient(145deg, #366b47, #245a33);
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 5px 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .number-button {
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        }
+
+        .number-button:hover {
+            background: linear-gradient(145deg, #4a4a4a, #343434);
+        }
+
+        .extra-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .extra-buttons button {
+            height: 40px;
+            font-size: 12px;
+            flex: 1;
+            background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
+        }
+
+        .extra-buttons button:hover {
+            background: linear-gradient(145deg, #4a4a4a, #343434);
+        }
+
+        .history {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 12px;
+            background: #1a1a1a;
+            color: #b0b0b0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .history div {
+            padding: 4px 2px;
+            border-bottom: 1px solid #333;
+            font-family: "Courier New", monospace;
+        }
+
+        .history div:last-child {
+            border-bottom: none;
+        }
+
+        .history::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .history::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+
+        .history::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        @media (min-width: 768px) {
+            .calculator {
+                max-width: 400px;
+                padding: 20px;
+            }
+
+            #display {
+                height: 65px;
+                font-size: 32px;
+                margin-bottom: 20px;
+            }
+
+            button {
+                height: 60px;
+                font-size: 20px;
+            }
+
+            .extra-buttons button {
+                height: 45px;
+                font-size: 13px;
+            }
+
+            .history {
+                font-size: 13px;
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="calculator">
+
+        <input type="text" id="display" readonly>
+
+        <div class="buttons">
+
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="operator" onclick="appendToDisplay('/')" title="Divide">÷</button>
+            <button class="operator" onclick="appendToDisplay('*')" title="Multiply">×</button>
+            <button class="clear" onclick="backspace()">⌫</button>
+
+            <button class="number-button" onclick="appendToDisplay('7')">7</button>
+            <button class="number-button" onclick="appendToDisplay('8')">8</button>
+            <button class="number-button" onclick="appendToDisplay('9')">9</button>
+            <button class="operator" onclick="appendToDisplay('-')" title="Subtract">−</button>
+
+            <button class="number-button" onclick="appendToDisplay('4')">4</button>
+            <button class="number-button" onclick="appendToDisplay('5')">5</button>
+            <button class="number-button" onclick="appendToDisplay('6')">6</button>
+            <button class="operator" onclick="appendToDisplay('+')" title="Add">+</button>
+
+            <button class="number-button" onclick="appendToDisplay('1')">1</button>
+            <button class="number-button" onclick="appendToDisplay('2')">2</button>
+            <button class="number-button" onclick="appendToDisplay('3')">3</button>
+            <button class="equals" onclick="calculateResult()" title="Calculate">=</button>
+
+            <button class="number-button" onclick="appendToDisplay('0')" style="grid-column: span 2;">0</button>
+            <button class="number-button" onclick="appendToDisplay('.')">.</button>
+            <button class="operator" onclick="appendToDisplay('^')" title="Power">^</button>
+
+        </div>
+
+        <div class="extra-buttons">
+            <button onclick="exportCSV()">Export CSV</button>
+            <button onclick="clearHistory()">Clear History</button>
+        </div>
+
+        <div class="history" id="history"></div>
+
+    </div>
+
+    <script>
+        function appendToDisplay(value) {
+            const display = document.getElementById('display');
+
+            const start = display.selectionStart;
+            const end = display.selectionEnd;
+
+            display.value =
+                display.value.slice(0, start) +
+                value +
+                display.value.slice(end);
+
+            display.focus();
+
+            display.setSelectionRange(
+                start + value.length,
+                start + value.length
+            );
+        }
+
+        function clearDisplay() {
+            const display = document.getElementById('display');
+
+            display.value = '';
+
+            display.focus();
+        }
+
+        function backspace() {
+            const display = document.getElementById('display');
+
+            const start = display.selectionStart;
+            const end = display.selectionEnd;
+
+            if (start !== end) {
+                display.value =
+                    display.value.slice(0, start) +
+                    display.value.slice(end);
+
+                display.setSelectionRange(start, start);
+            }
+            else if (start > 0) {
+                display.value =
+                    display.value.slice(0, start - 1) +
+                    display.value.slice(start);
+
+                display.setSelectionRange(start - 1, start - 1);
+            }
+
+            display.focus();
+        }
+
+        function calculateResult() {
+            const display = document.getElementById('display');
+
+            try {
+                const originalExpression = display.value;
+                const expression = originalExpression.replace(/\^/g, "**");
+
+                const result = eval(expression);
+
+                display.value =
+                    originalExpression + " = " + result;
+
+                display.focus();
+
+                display.setSelectionRange(
+                    display.value.length,
+                    display.value.length
+                );
+
+                saveHistory(originalExpression, result);
+            }
+            catch (error) {
+                display.value = "Error";
+
+                display.focus();
+
+                display.setSelectionRange(
+                    display.value.length,
+                    display.value.length
+                );
+            }
+        }
+
+        function saveHistory(expression, result) {
+            let history =
+                JSON.parse(localStorage.getItem("calcHistory")) || [];
+
+            history.push({
+                expression: expression,
+                result: result,
+                time: new Date().toLocaleString()
+            });
+
+            localStorage.setItem(
+                "calcHistory",
+                JSON.stringify(history)
+            );
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const historyContainer =
+                document.getElementById("history");
+
+            const history =
+                JSON.parse(localStorage.getItem("calcHistory")) || [];
+
+            historyContainer.innerHTML = history.map(item => `
+                <div>
+                    ${item.time}: ${item.expression} = ${item.result}
+                </div>
+            `).join("");
+        }
+
+        function exportCSV() {
+            const history =
+                JSON.parse(localStorage.getItem("calcHistory")) || [];
+
+            if (history.length === 0) {
+                return;
+            }
+
+            let csv = "Time,Expression,Result\n";
+
+            history.forEach(item => {
+                csv += `"${item.time}","${item.expression}","${item.result}"\n`;
+            });
+
+            const blob = new Blob([csv], {
+                type: "text/csv"
+            });
+
+            const link = document.createElement("a");
+
+            link.href = URL.createObjectURL(blob);
+            link.download = "calculator_history.csv";
+            link.click();
+        }
+
+        function clearHistory() {
+            localStorage.removeItem("calcHistory");
+
+            renderHistory();
+        }
+
+        document
+            .getElementById("display")
+            .addEventListener("keydown", function(event) {
+
+                const allowedKeys =
+                    "0123456789+-*/.^";
+
+                if (allowedKeys.includes(event.key)) {
+                    event.preventDefault();
+
+                    appendToDisplay(event.key);
+                }
+                else if (
+                    event.key === "Enter" ||
+                    event.key === "="
+                ) {
+                    event.preventDefault();
+
+                    calculateResult();
+                }
+                else if (event.key === "Backspace") {
+                    event.preventDefault();
+
+                    backspace();
+                }
+                else if (event.key === "Escape") {
+                    event.preventDefault();
+
+                    clearDisplay();
+                }
+            });
+
+        renderHistory();
+    </script>
+
 </body>
 </html>
