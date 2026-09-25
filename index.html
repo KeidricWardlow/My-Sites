@@ -1,145 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>String Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald&display=swap');
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, orange, white, red);
+  font-family: 'Oswald';
+  overflow: auto;
+}
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
+.container {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 350px;
+  box-sizing: border-box;
+  text-align: center;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
 
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
+#result-container {
+  width: 100%;
+  flex: 1;
+  min-height: 100px;
+  max-height: 200px;
+  border: 1px solid black;
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: 10px;
+  border-radius: 4px;
+}
 
-    .read {
-      color: gray;
-    }
+#result {
+  font-weight: bold;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
-    .unread {
-      color: blue;
-    }
+button {
+  background: navy;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin: 5px;
+  font-family: 'Oswald';
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100px;
+  font-weight: bold;
+}
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
+button:hover {
+  background: skyblue;
+  color: navy;
+}
 
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
+input, select {
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 4px;
+  width: 80%;
+  text-align: center;
+}
 
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
+@media (min-width: 768px) {
+  .container {
+    max-width: 600px;
+    padding: 50px;
+    border-radius: 16px;
+  }
+
+  button {
+    width: 120px;
+    padding: 12px;
+  }
+
+  input, select {
+    width: 85%;
+    font-size: 1.1em;
+  }
+
+  #result-container {
+    min-height: 150px;
+    max-height: 300px;
+  }
+</style>
 </head>
 <body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+  <div class="container">
+    <label>String Length:</label>
+    <input type="number" id="stringLength" value="10">
+    <label>Number of Strings:</label>
+    <input type="number" id="numStrings" value="5">
+    <label>Character Type:</label>
+    <select id="charType">
+      <option value="letters">Letters</option>
+      <option value="numbers">Numbers</option>
+      <option value="alphanumeric">Alphanumeric</option>
+      <option value="symbols">Symbols</option>
+      <option value="all">All</option>
+      <option value="mac">MAC Address</option>
+    </select>
+    <button onclick="generateStrings()">Generate</button>
+    <div id="result-container">
+      <div id="result"></div>
+    </div>
+    <div>
+      <button onclick="copyText()">Copy</button>
+      <button onclick="printText()">Print</button>
+      <button onclick="downloadText()">Download</button>
+      <button onclick="clearText()">Clear</button>
+      <button onclick="undoAction()">Undo</button>
+      <button onclick="redoAction()">Redo</button>
+    </div>
+  </div>
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+<script>
+let history = [];
+let historyIndex = -1;
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+function saveState() {
+  const state = {
+    stringLength: document.getElementById('stringLength').value,
+    numStrings: document.getElementById('numStrings').value,
+    charType: document.getElementById('charType').value,
+    result: document.getElementById('result').textContent
+  };
+  history = history.slice(0, historyIndex + 1);
+  history.push(JSON.stringify(state));
+  historyIndex++;
+  localStorage.setItem('stringGenHistory', JSON.stringify(history));
+  localStorage.setItem('stringGenHistoryIndex', historyIndex);
+}
 
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+function restoreState(index) {
+  const state = JSON.parse(history[index]);
+  document.getElementById('stringLength').value = state.stringLength;
+  document.getElementById('numStrings').value = state.numStrings;
+  document.getElementById('charType').value = state.charType;
+  document.getElementById('result').textContent = state.result;
+}
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
+function generateStrings() {
+  const stringLength = parseInt(document.getElementById('stringLength').value);
+  const numStrings = parseInt(document.getElementById('numStrings').value);
+  const charType = document.getElementById('charType').value;
+  const result = document.getElementById('result');
+  let characters = '';
+  if (charType === 'letters') characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  else if (charType === 'numbers') characters = '0123456789';
+  else if (charType === 'alphanumeric') characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  else if (charType === 'symbols') characters = '!@#$%^&*()-_=+[]{}|;:,.<>?/`~';
+  else if (charType === 'all') characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/`~';
+  let output = '';
+  if (charType === 'mac') {
+    for (let i = 0; i < numStrings; i++) {
+      let mac = '';
+      for (let j = 0; j < 6; j++) {
+        mac += ('0' + Math.floor(Math.random() * 256).toString(16)).slice(-2).toUpperCase();
+        if (j < 5) mac += ':';
       }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
-        }
-      });
-    });
-  </script>
+      output += mac + '\n';
+    }
+  } else {
+    for (let i = 0; i < numStrings; i++) {
+      let str = '';
+      for (let j = 0; j < stringLength; j++) {
+        str += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      output += str + '\n';
+    }
+  }
+  result.textContent = output;
+  saveState();
+}
+
+async function copyText() {
+  const text = document.getElementById('result').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    const resultDiv = document.getElementById('result');
+    range.selectNodeContents(resultDiv);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.execCommand('copy');
+    selection.removeAllRanges();
+  }
+}
+
+function printText() {
+  const text = document.getElementById('result').textContent;
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Generated Strings</title>
+      <style>
+        body { font-family: monospace; margin: 20px; }
+        pre { white-space: pre-wrap; word-break: break-word; }
+      </style>
+    </head>
+    <body>
+      <pre>${text}</pre>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+function downloadText() {
+  const blob = new Blob([document.getElementById('result').textContent], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'generated_strings.txt';
+  link.click();
+}
+
+function clearText() {
+  document.getElementById('result').textContent = '';
+  saveState();
+}
+
+function undoAction() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    restoreState(historyIndex);
+    localStorage.setItem('stringGenHistoryIndex', historyIndex);
+  }
+}
+
+function redoAction() {
+  if (historyIndex < history.length - 1) {
+    historyIndex++;
+    restoreState(historyIndex);
+    localStorage.setItem('stringGenHistoryIndex', historyIndex);
+  }
+}
+
+window.onload = function() {
+  const storedHistory = localStorage.getItem('stringGenHistory');
+  const storedIndex = localStorage.getItem('stringGenHistoryIndex');
+  if (storedHistory) {
+    history = JSON.parse(storedHistory);
+    historyIndex = parseInt(storedIndex, 10);
+    if (history.length && historyIndex >= 0) restoreState(historyIndex);
+  } else {
+    saveState();
+  }
+};
+</script>
 </body>
 </html>
