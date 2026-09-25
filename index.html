@@ -1,145 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Recursion</title>
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.3.1/decimal.min.js"></script>
+        <style>
+            body {
+                background: linear-gradient(to right, green, springgreen, white);
+                color: snow;
+                font-family: 'Merriweather', monospace;
+                height: 100vh;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
+            .container {
+                width: 90%;
+                max-width: 1200px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                box-sizing: border-box;
+                border: 2px solid snow;
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.5);
+            }
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
+            .toolbar {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 15px;
+            }
 
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
+            select,
+            input,
+            button {
+                background: black;
+                color: snow;
+                border: 1px solid snow;
+                padding: 8px;
+                border-radius: 6px;
+                font-family: 'Merriweather', monospace;
+                transition: 0.2s;
+            }
 
-    .read {
-      color: gray;
-    }
+            select:hover,
+            input:hover,
+            button:hover {
+                background: snow;
+                color: black;
+            }
 
-    .unread {
-      color: blue;
-    }
+            .editor {
+                display: flex;
+                gap: 10px;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+            }
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
+            textarea {
+                width: 100%;
+                height: 70vh;
+                background: black;
+                color: snow;
+                border: 1px solid snow;
+                border-radius: 6px;
+                resize: none;
+                padding: 10px;
+                font-size: 14px;
+                font-family: 'Merriweather', monospace;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
 
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
+            .middle {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
 
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+            .middle input {
+                width: 60px;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="toolbar">
+                <button id="uploadBtn">Upload</button>
+                <select id="editOptions">
+                    <option>Edit</option>
+                    <option>Clear</option>
+                    <option>Cut</option>
+                    <option>Copy</option>
+                    <option>Undo</option>
+                    <option>Redo</option>
+                </select>
+                <button id="exportBtn">Export CSV</button>
+            </div>
+            <div class="editor">
+                <textarea id="inputArea" placeholder="Enter one integer or decimal per line"></textarea>
+                <div class="middle">
+                    <select id="operation">
+                        <option>^</option>
+                        <option>*</option>
+                        <option>/</option>
+                        <option>+</option>
+                        <option>-</option>
+                    </select>
+                    <input type="number" id="numberInput" min="0" />
+                </div>
+                <textarea id="outputArea" readonly></textarea>
+            </div>
+        </div>
+        <script>
+            const inputArea = document.getElementById("inputArea");
+            const outputArea = document.getElementById("outputArea");
+            const numberInput = document.getElementById("numberInput");
+            const operation = document.getElementById("operation");
+            const editOptions = document.getElementById("editOptions");
+            const exportBtn = document.getElementById("exportBtn");
+            const uploadBtn = document.getElementById("uploadBtn");
+            const historyStack = [];
+            let redoStack = [];
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+            function pushState() {
+                historyStack.push({
+                    input: inputArea.value,
+                    output: outputArea.value,
+                    num: numberInput.value,
+                    op: operation.value
+                });
+                if (historyStack.length > 100) historyStack.shift();
+                redoStack = [];
+            }
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+            function undo() {
+                if (historyStack.length < 2) return;
+                redoStack.push(historyStack.pop());
+                const last = historyStack[historyStack.length - 1];
+                inputArea.value = last.input;
+                outputArea.value = last.output;
+                numberInput.value = last.num;
+                operation.value = last.op;
+                process();
+                save();
+            }
 
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+            function redo() {
+                if (redoStack.length === 0) return;
+                const state = redoStack.pop();
+                historyStack.push(state);
+                inputArea.value = state.input;
+                outputArea.value = state.output;
+                numberInput.value = state.num;
+                operation.value = state.op;
+                process();
+                save();
+            }
+            window.addEventListener("load", () => {
+                inputArea.value = localStorage.getItem("inputArea") || "";
+                outputArea.value = localStorage.getItem("outputArea") || "";
+                numberInput.value = localStorage.getItem("numberInput") || "";
+                operation.value = localStorage.getItem("operation") || "^";
+                process();
+                pushState();
+            });
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
-        }
-      });
-    });
-  </script>
-</body>
+            function save() {
+                localStorage.setItem("inputArea", inputArea.value);
+                localStorage.setItem("outputArea", outputArea.value);
+                localStorage.setItem("numberInput", numberInput.value);
+                localStorage.setItem("operation", operation.value);
+            }
+            operation.addEventListener("change", () => {
+                process();
+                save();
+                pushState();
+            });
+            numberInput.addEventListener("input", () => {
+                process();
+                save();
+                pushState();
+            });
+            inputArea.addEventListener("input", () => {
+                process();
+                save();
+                pushState();
+            });
+
+            function process() {
+                const op = operation.value;
+                const num = new Decimal(numberInput.value || 0);
+                const lines = inputArea.value.split("\n");
+                const result = lines.map(line => {
+                    if (!line.trim()) return "";
+                    try {
+                        const val = new Decimal(line);
+                        switch (op) {
+                            case "^":
+                                return val.pow(num).toString();
+                            case "*":
+                                return val.times(num).toString();
+                            case "/":
+                                return val.div(num).toString();
+                            case "+":
+                                return val.plus(num).toString();
+                            case "-":
+                                return val.minus(num).toString();
+                            default:
+                                return line;
+                        }
+                    } catch {
+                        return line;
+                    }
+                });
+                outputArea.value = result.join("\n");
+            }
+            uploadBtn.addEventListener("click", () => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".txt";
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = evt => {
+                        inputArea.value = evt.target.result;
+                        process();
+                        save();
+                        pushState();
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+            async function copyToClipboard(text) {
+                if (!text) return false;
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    }
+                } catch (e) {}
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    return ok;
+                } catch (e) {
+                    return false;
+                }
+            }
+            editOptions.addEventListener("change", async () => {
+                const opt = editOptions.value;
+                switch (opt) {
+                    case "Clear":
+                        inputArea.value = "";
+                        outputArea.value = "";
+                        numberInput.value = "";
+                        save();
+                        pushState();
+                        break;
+                    case "Cut": {
+                        const text = outputArea.value;
+                        const ok = await copyToClipboard(text);
+                        if (ok) {
+                            outputArea.value = "";
+                            save();
+                            pushState();
+                        }
+                        break;
+                    }
+                    case "Copy": {
+                        const text = outputArea.value;
+                        await copyToClipboard(text);
+                        break;
+                    }
+                    case "Undo":
+                        undo();
+                        break;
+                    case "Redo":
+                        redo();
+                        break;
+                }
+                editOptions.selectedIndex = 0;
+            });
+            exportBtn.addEventListener("click", () => {
+                const op = operation.value;
+                const num = numberInput.value;
+                const inputLines = inputArea.value.split("\n");
+                const outputLines = outputArea.value.split("\n");
+                let csvContent = "Input,Operation,Operand,Output\n";
+                for (let i = 0; i < inputLines.length; i++) {
+                    const inputVal = inputLines[i].replace(/,/g, " ");
+                    const outputVal = outputLines[i] || "";
+                    csvContent += `${inputVal},${op},${num},${outputVal}\n`;
+                }
+                const blob = new Blob([csvContent], {
+                    type: "text/csv;charset=utf-8;"
+                });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "output.csv";
+                link.click();
+            });
+        </script>
+    </body>
 </html>
