@@ -1,145 +1,528 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
+  <meta charset="UTF-8">
+  <title>Summation</title>
   <style>
     body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
+      font-family: Georgia, serif;
+      background: linear-gradient(to right, black, white, grey);
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      background: rgba(255,255,255,0.85);
+      border: 2px solid black;
+      border-radius: 12px;
+      box-shadow: 4px 4px 14px rgba(0,0,0,0.5);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .header-row {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
       width: 100%;
-      max-width: 100vh;
+    }
+
+    .header-spacer {
+      width: 110px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 110px;
+    }
+
+    .file-btn {
+      font-family: Georgia, serif;
+      font-size: 0.9em;
+      padding: 4px 8px;
+      background: #e6e6fa;
+      border: 1.2px solid black;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .number-input {
+      width: 90px;
+      padding: 8px;
+      font-size: 1.1em;
+      border: 1px solid black;
+      border-radius: 5px;
       text-align: center;
-      z-index: 2;
+      font-family: Georgia, serif;
     }
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
+    button {
+      font-family: Georgia, serif;
+      font-size: 1.05em;
+      padding: 6px 12px;
+      background: lavender;
+      border: 1.5px solid black;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background .2s;
+      margin: 4px;
     }
 
-    li a:hover {
-      background: black;
-      color: springgreen;
+    button:hover {
+      background: turquoise;
     }
 
-    .read {
-      color: gray;
+    .results-box {
+      margin-top: 18px;
+      width: 100%;
+      max-width: 480px;
+      min-height: 40px;
+      max-height: 160px;
+      overflow-y: auto;
+      background: moccasin;
+      border: 1.5px solid black;
+      border-radius: 7px;
+      padding: 14px;
+      font-size: 1.1em;
+      color: black;
+      white-space: pre-wrap;
     }
 
-    .unread {
-      color: blue;
+    hr {
+      border: none;
+      border-top: 1.5px solid black;
+      margin: 8px 0;
     }
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
-
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
+    @media(max-width:600px) {
+      .container, .results-box { max-width: 98vw; }
+      .row { flex-direction: column; gap: 8px; align-items: center; }
+      .results-box { font-size: 1em; }
+      .input-wrapper { width: 90%; }
+      .header-row { flex-direction: column; gap: 6px; }
+      .header-spacer { width: 100%; height: 0; }
     }
   </style>
 </head>
 <body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+  <div class="container">
+    <div class="header-row" id="headerRow">
+      <div class="input-wrapper" style="align-items:center;">
+        <button id="base-file-btn" class="file-btn" type="button">Choose Base File</button>
+        <input id="base-file-input" class="file-input" type="file" accept=".txt,.csv,text/plain" />
+      </div>
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+      <div class="header-spacer"></div>
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+      <div class="input-wrapper" style="align-items:center;">
+        <button id="end-file-btn" class="file-btn" type="button">Choose End File</button>
+        <input id="end-file-input" class="file-input" type="file" accept=".txt,.csv,text/plain" />
+      </div>
+    </div>
+
+    <div id="rows-container"></div>
+
+    <div>
+      <button id="add-row-btn">Add Row</button>
+      <button id="clear-btn">Clear</button>
+      <button id="undo-btn">Undo</button>
+      <button id="redo-btn">Redo</button>
+      <button id="export-btn">Export CSV</button>
+    </div>
+    <div class="results-box" id="resultsBox"></div>
+  </div>
 
   <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+    const STORAGE_KEY = "summation-app-data";
+    const rowsContainer = document.getElementById('rows-container');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    const resultsBox = document.getElementById('resultsBox');
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
+    const baseFileBtn = document.getElementById('base-file-btn');
+    const baseFileInput = document.getElementById('base-file-input');
+    const endFileBtn = document.getElementById('end-file-btn');
+    const endFileInput = document.getElementById('end-file-input');
+
+    let history = [];
+    let historyIndex = -1;
+    const maxHistory = 50;
+
+    function pushHistory() {
+      const rowsData = Array.from(rowsContainer.querySelectorAll('.row')).map(row => {
+        const bRaw = row.querySelector('.base-input').value;
+        const eRaw = row.querySelector('.end-input').value;
+        const base = bRaw === "" ? null : parseInt(bRaw, 10);
+        const end = eRaw === "" ? null : parseInt(eRaw, 10);
+        return { base, end };
+      });
+      const state = JSON.stringify({
+        rows: rowsData,
+        results: resultsBox.innerHTML
+      });
+      if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
       }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
+      history.push(state);
+      if (history.length > maxHistory) history.shift();
+      historyIndex = history.length - 1;
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        restoreState(history[historyIndex]);
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreState(history[historyIndex]);
+      }
+    }
+
+    function restoreState(state) {
+      try {
+        const data = JSON.parse(state);
+        if (data && Array.isArray(data.rows)) {
+          rowsContainer.innerHTML = '';
+          data.rows.forEach(r => rowsContainer.appendChild(createRow(r.base, r.end)));
+          setUpListeners();
+          calculateSum();
+          if (typeof data.results === 'string') {
+            resultsBox.innerHTML = data.results;
+          }
+          saveToLocalStorage();
+        } else if (data && data.html) {
+          rowsContainer.innerHTML = data.html;
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          saveToLocalStorage();
+        }
+      } catch (e) {
+        console.error('Failed to restore state', e);
+      }
+    }
+
+    function saveToLocalStorage() {
+      const rowsData = Array.from(rowsContainer.querySelectorAll('.row')).map(row => {
+        const bRaw = row.querySelector('.base-input').value;
+        const eRaw = row.querySelector('.end-input').value;
+        const base = bRaw === "" ? null : parseInt(bRaw, 10);
+        const end = eRaw === "" ? null : parseInt(eRaw, 10);
+        return { base, end };
+      });
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          rows: rowsData,
+          results: resultsBox.innerHTML
+        }));
+      } catch (e) {
+        console.error('Failed to save to localStorage', e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return false;
+      try {
+        const data = JSON.parse(saved);
+        if (data && Array.isArray(data.rows)) {
+          rowsContainer.innerHTML = '';
+          data.rows.forEach(r => rowsContainer.appendChild(createRow(r.base, r.end)));
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          calculateSum();
+          return true;
+        } else if (data && data.html) {
+          rowsContainer.innerHTML = data.html;
+          resultsBox.innerHTML = data.results || '';
+          setUpListeners();
+          calculateSum();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('Failed to load from localStorage', e);
+        return false;
+      }
+    }
+
+    function createRow(base = null, end = null) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const baseWrapper = document.createElement('div');
+      baseWrapper.className = 'input-wrapper';
+      const input1 = document.createElement('input');
+      input1.type = 'number';
+      input1.className = 'number-input base-input';
+      input1.placeholder = 'Base (start)';
+      input1.value = (base === null || base === undefined) ? '' : base;
+      baseWrapper.append(input1);
+
+      const endWrapper = document.createElement('div');
+      endWrapper.className = 'input-wrapper';
+      const input2 = document.createElement('input');
+      input2.type = 'number';
+      input2.className = 'number-input end-input';
+      input2.placeholder = 'End (inclusive)';
+      input2.value = (end === null || end === undefined) ? '' : end;
+      endWrapper.append(input2);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', () => {
+        row.remove();
+        handleChange();
+      });
+
+      input1.addEventListener('input', handleChange);
+      input2.addEventListener('input', handleChange);
+
+      row.append(baseWrapper, endWrapper, deleteBtn);
+      return row;
+    }
+
+    function parseLineToPair(line) {
+      const trimmed = line.trim();
+      if (trimmed === '') return null;
+      let tokens = trimmed.split(/[\t, ]+/).filter(Boolean);
+      if (tokens.length === 1 && tokens[0].includes('-')) {
+        tokens = tokens[0].split('-').map(s => s.trim()).filter(Boolean);
+      }
+      const nums = tokens.map(t => {
+        const n = parseInt(t, 10);
+        return isNaN(n) ? null : n;
+      });
+      if (nums.length >= 2 && nums[0] !== null && nums[1] !== null) {
+        return { base: nums[0], end: nums[1] };
+      }
+      if (nums.length === 1 && nums[0] !== null) {
+        return { value: nums[0] };
+      }
+      return null;
+    }
+
+    function handleGlobalFileImport(e, type) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        let startIndex = 0;
+        if (lines.length > 0) {
+          const first = lines[0].toLowerCase();
+          if (first.includes('base') || first.includes('start') || first.includes('end')) {
+            startIndex = 1;
+          }
+        }
+
+        const parsedLines = [];
+        for (let i = startIndex; i < lines.length; i++) {
+          const parsed = parseLineToPair(lines[i]);
+          if (parsed) parsedLines.push(parsed);
+        }
+
+        if (parsedLines.length === 0) {
+          alert('No valid numeric lines found in file.');
+          e.target.value = '';
+          return;
+        }
+
+        const pairs = parsedLines.filter(p => p.base !== undefined && p.end !== undefined);
+        const singles = parsedLines.filter(p => p.value !== undefined);
+
+        pairs.forEach(p => {
+          rowsContainer.appendChild(createRow(p.base, p.end));
+        });
+
+        if (singles.length > 0) {
+          const values = singles.map(s => s.value);
+          const remaining = [...values];
+
+          const currentRows = Array.from(rowsContainer.querySelectorAll('.row'));
+          for (let i = 0; i < currentRows.length && remaining.length > 0; i++) {
+            const row = currentRows[i];
+            const input = (type === 'base') ? row.querySelector('.base-input') : row.querySelector('.end-input');
+            if (input.value === '') {
+              input.value = remaining.shift();
+            }
+          }
+
+          while (remaining.length > 0) {
+            const v = remaining.shift();
+            if (type === 'base') {
+              rowsContainer.appendChild(createRow(v, null));
+            } else {
+              rowsContainer.appendChild(createRow(null, v));
+            }
+          }
+        }
+
+        handleChange();
+
+        e.target.value = '';
+        if (rowsContainer.lastElementChild) {
+          rowsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      };
+      reader.onerror = () => {
+        alert('Failed to read file.');
+      };
+      reader.readAsText(file);
+    }
+
+    function handleChange() {
+      calculateSum();
+      saveToLocalStorage();
+      pushHistory();
+    }
+
+    function calculateSum() {
+      let sum = 0;
+      const details = [];
+      const rows = rowsContainer.querySelectorAll('.row');
+      rows.forEach((row, idx) => {
+        const baseVal = parseInt(row.querySelector('.base-input').value, 10);
+        const endVal = parseInt(row.querySelector('.end-input').value, 10);
+        if (!isNaN(baseVal) && !isNaN(endVal) && endVal >= baseVal) {
+          let rowSum = 0;
+          const nums = [];
+          for (let i = baseVal; i <= endVal; i++) {
+            rowSum += i;
+            nums.push(i);
+          }
+          sum += rowSum;
+          const displaySeq = (endVal - baseVal <= 10)
+            ? nums.join(" + ")
+            : `${nums.slice(0,3).join(" + ")} + ... + ${nums.slice(-3).join(" + ")}`;
+          details.push(`Row ${idx + 1}: ${displaySeq} = ${rowSum}`);
+        } else if (!isNaN(baseVal) && !isNaN(endVal)) {
+          details.push(`Row ${idx + 1}: End must be ≥ Base`);
+        } else {
+          details.push(`Row ${idx + 1}: Enter base and end`);
         }
       });
+      const totalHTML = details.map(d => `<div>${d}</div>`).join("");
+      resultsBox.innerHTML = `${totalHTML}<hr><div><b>Total Sum: ${sum}</b></div>`;
+    }
+
+    function exportCSV() {
+      const rows = rowsContainer.querySelectorAll('.row');
+      let csvContent = "Row,Base,End,Addends,Sum,Total Sum\n";
+      let totalSum = 0;
+      const data = [];
+      rows.forEach((row, idx) => {
+        const baseVal = parseInt(row.querySelector('.base-input').value, 10);
+        const endVal = parseInt(row.querySelector('.end-input').value, 10);
+        if (!isNaN(baseVal) && !isNaN(endVal) && endVal >= baseVal) {
+          let sum = 0;
+          let numbers = [];
+          for (let i = baseVal; i <= endVal; i++) {
+            sum += i;
+            numbers.push(i);
+          }
+          totalSum += sum;
+          data.push({
+            row: idx + 1,
+            base: baseVal,
+            end: endVal,
+            addends: numbers.join(" + "),
+            sum
+          });
+        }
+      });
+      data.forEach(d => {
+        csvContent += `${d.row},${d.base},${d.end},"${d.addends}",${d.sum}\n`;
+      });
+      csvContent += `,,,,,${totalSum}\n`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'summation_results.csv';
+      link.click();
+    }
+
+    function clearAll() {
+      rowsContainer.innerHTML = '';
+      rowsContainer.appendChild(createRow());
+      resultsBox.innerHTML = '';
+      handleChange();
+    }
+
+    function setUpListeners() {
+      rowsContainer.querySelectorAll('.base-input,.end-input').forEach(input => {
+        if (!input.dataset.listenerAttached) {
+          input.addEventListener('input', handleChange);
+          input.dataset.listenerAttached = '1';
+        }
+      });
+      rowsContainer.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent === 'Delete' && !btn.dataset.listenerAttached) {
+          btn.addEventListener('click', () => {
+            btn.parentElement.remove();
+            handleChange();
+          });
+          btn.dataset.listenerAttached = '1';
+        }
+      });
+    }
+
+    baseFileBtn.addEventListener('click', () => baseFileInput.click());
+    baseFileInput.addEventListener('change', (e) => handleGlobalFileImport(e, 'base'));
+    endFileBtn.addEventListener('click', () => endFileInput.click());
+    endFileInput.addEventListener('change', (e) => handleGlobalFileImport(e, 'end'));
+
+    addRowBtn.addEventListener('click', () => {
+      rowsContainer.appendChild(createRow());
+      handleChange();
     });
+    exportBtn.addEventListener('click', exportCSV);
+    clearBtn.addEventListener('click', clearAll);
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    window.addEventListener('beforeunload', saveToLocalStorage);
+
+    if (!loadFromLocalStorage()) {
+      rowsContainer.appendChild(createRow());
+      calculateSum();
+      saveToLocalStorage();
+    }
+    pushHistory();
   </script>
 </body>
 </html>
