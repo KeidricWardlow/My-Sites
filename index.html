@@ -1,145 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"></script>
+        <title>Integer Calculator</title>
+        <style>
+            body {
+                background: linear-gradient(to right, darkblue, cyan, black);
+                margin: 0;
+                min-height: 100vh;
+                font-family: 'Lora', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                overflow: auto;
+                padding: 20px 0;
+            }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
+            .container {
+                padding: 20px;
+                text-align: center;
+                color: brown;
+                width: 100%;
+                max-width: 800px;
+                max-height: 90vh;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                overflow: auto;
+                margin: auto;
+            }
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
+            textarea,
+            .number-inputs {
+                resize: none;
+                width: 100%;
+                max-width: 100%;
+                margin-top: 20px;
+                padding: 5px;
+                font-size: 16px;
+            }
 
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
+            input[type=number] {
+                width: 90%;
+                margin: 5px 0;
+                padding: 5px;
+                font-size: 16px;
+            }
 
-    .read {
-      color: gray;
-    }
+            select {
+                margin-top: 20px;
+                padding: 5px;
+                font-size: 16px;
+            }
 
-    .unread {
-      color: blue;
-    }
+            button {
+                margin-top: 10px;
+                margin-right: 5px;
+                padding: 10px 15px;
+                cursor: pointer;
+                background: darkorange;
+                color: white;
+                border: 2px solid black;
+                font-size: 16px;
+                font-family: 'Lora', sans-serif;
+                border-radius: 6px;
+            }
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
+            button:hover {
+                background: linear-gradient(to right, lime, darkgreen);
+            }
 
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
+            h2 {
+                margin-top: 20px;
+            }
 
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+            #resultDisplay {
+                margin-top: 10px;
+                padding: 10px;
+                border: 1px solid brown;
+                background-color: rgba(255, 228, 196, 0.5);
+                border-radius: 4px;
+            }
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+            .history {
+                margin-top: 20px;
+                border-top: 1px solid brown;
+                padding-top: 10px;
+                flex-grow: 1;
+            }
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+            .history-item {
+                margin: 5px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <input type="file" id="fileInput" accept=".txt" />
+            <div id="inputContainer">
+                <textarea id="numberInput" rows="15" placeholder="Enter integers or expressions separated by newline..."></textarea>
+            </div>
+            <div>
+                <select id="operationSelect">
+                    <option value="exponent">^ Exponent</option>
+                    <option value="multiply">× Multiply</option>
+                    <option value="divide">÷ Divide</option>
+                    <option value="add">+ Add</option>
+                    <option value="subtract">- Subtract</option>
+                    <option value="modulo">% Modulo</option>
+                </select>
+            </div>
+            <button id="calculateButton">Calculate</button>
+            <button id="clearButton">Clear Input</button>
+            <button id="clearHistoryButton">Clear History</button>
+            <button id="exportCSVButton">Export History</button>
+            <button id="undoButton">Undo</button>
+            <button id="redoButton">Redo</button>
+            <h2>Result:</h2>
+            <div id="resultDisplay"></div>
+            <div class="history" id="historyContainer">
+                <h3>History:</h3>
+            </div>
+        </div>
+        <script>
+            const fileInput = document.getElementById('fileInput');
+            const inputContainer = document.getElementById('inputContainer');
+            const operationSelect = document.getElementById('operationSelect');
+            const resultDisplay = document.getElementById('resultDisplay');
+            const historyContainer = document.getElementById('historyContainer');
+            let undoStack = JSON.parse(localStorage.getItem('undoStack') || '[]');
+            let redoStack = JSON.parse(localStorage.getItem('redoStack') || '[]');
+            let lastSavedState = null;
+            let saveTimeout;
 
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+            function loadExpModInputs(op) {
+                inputContainer.innerHTML = '';
+                const div = document.createElement('div');
+                div.classList.add('number-inputs');
+                const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
+                const saved = JSON.parse(localStorage.getItem(key) || '[0,0]');
+                saved.forEach(v => {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = v;
+                    input.addEventListener('input', saveState);
+                    div.appendChild(input);
+                });
+                while (div.children.length < 2) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.value = 0;
+                    input.addEventListener('input', saveState);
+                    div.appendChild(input);
+                }
+                inputContainer.appendChild(div);
+            }
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
-        }
-      });
-    });
-  </script>
-</body>
+            function loadTextarea() {
+                inputContainer.innerHTML = `
+						<textarea id="numberInput" rows="15" placeholder="Enter integers or expressions separated by newline..."></textarea>`;
+                if (localStorage.getItem('numberData')) {
+                    document.getElementById('numberInput').value = localStorage.getItem('numberData');
+                }
+            }
+
+            function saveExpModInputs(op) {
+                const expModInputs = document.querySelectorAll('.number-inputs input');
+                if (expModInputs.length) {
+                    const key = op === 'exponent' ? 'expNumbers' : 'modNumbers';
+                    const values = Array.from(expModInputs).map(i => i.value);
+                    localStorage.setItem(key, JSON.stringify(values));
+                }
+            }
+
+            function getCurrentState() {
+                return {
+                    inputs: document.getElementById('numberInput') ? document.getElementById('numberInput').value : Array.from(document.querySelectorAll('.number-inputs input')).map(i => i.value),
+                    operation: operationSelect.value,
+                    result: resultDisplay.innerHTML,
+                    history: JSON.parse(localStorage.getItem('history') || '[]')
+                };
+            }
+
+            function saveState() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    const state = getCurrentState();
+                    if (JSON.stringify(state) === JSON.stringify(lastSavedState)) return;
+                    undoStack.push(state);
+                    localStorage.setItem('undoStack', JSON.stringify(undoStack));
+                    redoStack = [];
+                    localStorage.setItem('redoStack', JSON.stringify(redoStack));
+                    lastSavedState = state;
+                }, 150);
+            }
+
+            function restoreState(state) {
+                if (!state) return;
+                inputContainer.innerHTML = '';
+                if (state.operation === 'exponent' || state.operation === 'modulo') {
+                    loadExpModInputs(state.operation);
+                    const inputs = document.querySelectorAll('.number-inputs input');
+                    state.inputs.forEach((val, i) => {
+                        if (inputs[i]) inputs[i].value = val;
+                    });
+                    saveExpModInputs(state.operation);
+                } else {
+                    loadTextarea();
+                    document.getElementById('numberInput').value = state.inputs;
+                    localStorage.setItem('numberData', state.inputs);
+                }
+                operationSelect.value = state.operation;
+                resultDisplay.innerHTML = state.result;
+                historyContainer.innerHTML = '<h3>History:</h3>';
+                state.history.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.textContent = item;
+                    historyContainer.appendChild(div);
+                });
+                localStorage.setItem('history', JSON.stringify(state.history));
+            }
+
+            function addHistory(text) {
+                const history = JSON.parse(localStorage.getItem('history') || '[]');
+                if (history.length === 0 || history[history.length - 1] !== text) {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.textContent = text;
+                    historyContainer.appendChild(div);
+                    history.push(text);
+                    localStorage.setItem('history', JSON.stringify(history));
+                    saveState();
+                }
+            }
+            if (localStorage.getItem('history')) {
+                JSON.parse(localStorage.getItem('history')).forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.textContent = item;
+                    historyContainer.appendChild(div);
+                });
+            }
+            if (operationSelect.value === 'exponent' || operationSelect.value === 'modulo') loadExpModInputs(operationSelect.value);
+            else loadTextarea();
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const textarea = document.getElementById('numberInput');
+                        if (textarea) textarea.value = e.target.result;
+                        saveState();
+                    }
+                    reader.readAsText(file);
+                }
+            });
+            operationSelect.addEventListener('change', function() {
+                saveState();
+                const op = operationSelect.value;
+                if (op === 'exponent' || op === 'modulo') {
+                    saveExpModInputs(op === 'exponent' ? 'modulo' : 'exponent');
+                    loadExpModInputs(op);
+                } else {
+                    saveExpModInputs('exponent');
+                    saveExpModInputs('modulo');
+                    loadTextarea();
+                }
+            });
+            document.addEventListener('input', (e) => {
+                if (e.target.id === 'numberInput' || e.target.closest('.number-inputs')) saveState();
+            });
+            document.getElementById('calculateButton').addEventListener('click', function() {
+                let expressions;
+                const op = operationSelect.value;
+                let operationText = '';
+                let result;
+                if (op === 'modulo' || op === 'exponent') {
+                    expressions = Array.from(document.querySelectorAll('.number-inputs input')).map(i => i.value.trim()).filter(v => v !== '');
+                    saveExpModInputs(op);
+                } else {
+                    const textarea = document.getElementById('numberInput');
+                    expressions = textarea.value.trim().split('\n').map(v => v.trim()).filter(v => v !== '');
+                }
+                if (expressions.length === 0) {
+                    resultDisplay.innerHTML = 'Please enter valid expressions.';
+                    return;
+                }
+                try {
+                    switch (op) {
+                        case 'multiply':
+                        case 'add':
+                        case 'subtract':
+                        case 'divide':
+                            const joined = expressions.join(op === 'multiply' ? '*' : op === 'add' ? '+' : op === 'subtract' ? '-' : '/');
+                            result = math.evaluate(joined);
+                            operationText = joined;
+                            break;
+                        case 'exponent':
+                            result = expressions.reduceRight((acc, val) => Math.pow(Number(val), acc));
+                            operationText = expressions.join(' ^ ');
+                            break;
+                        case 'modulo':
+                            result = expressions.reduce((acc, val, i) => i === 0 ? Number(val) : acc % Number(val));
+                            operationText = expressions.join(' % ');
+                            break;
+                    }
+                    const formattedResult = (typeof result === 'number' && result < 0) ? `(${result})` : result;
+                    resultDisplay.innerHTML = `${operationText} = ${formattedResult}`;
+                    if (op !== 'modulo' && op !== 'exponent') {
+                        const textarea = document.getElementById('numberInput');
+                        if (textarea) localStorage.setItem('numberData', textarea.value);
+                    }
+                    addHistory(`${operationText} = ${formattedResult}`);
+                    saveState();
+                } catch {
+                    resultDisplay.innerHTML = 'Error in calculation';
+                }
+            });
+            document.getElementById('clearButton').addEventListener('click', function() {
+                saveState();
+                const expInputs = document.querySelectorAll('.number-inputs input');
+                if (expInputs.length) expInputs.forEach(i => i.value = '');
+                const textarea = document.getElementById('numberInput');
+                if (textarea) textarea.value = '';
+                resultDisplay.innerHTML = '';
+                localStorage.removeItem('numberData');
+                saveState();
+            });
+            document.getElementById('clearHistoryButton').addEventListener('click', function() {
+                saveState();
+                document.querySelectorAll('.history-item').forEach(item => item.remove());
+                localStorage.removeItem('history');
+                saveState();
+            });
+            document.getElementById('exportCSVButton').addEventListener('click', function() {
+                const history = JSON.parse(localStorage.getItem('history') || '[]');
+                if (history.length === 0) return;
+                const blob = new Blob([history.join('\n')], {
+                    type: 'text/csv'
+                });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'history.csv';
+                link.click();
+            });
+            document.getElementById('undoButton').addEventListener('click', () => {
+                if (undoStack.length === 0) return;
+                const currentState = getCurrentState();
+                redoStack.push(currentState);
+                localStorage.setItem('redoStack', JSON.stringify(redoStack));
+                const lastState = undoStack.pop();
+                localStorage.setItem('undoStack', JSON.stringify(undoStack));
+                restoreState(lastState);
+            });
+            document.getElementById('redoButton').addEventListener('click', () => {
+                if (redoStack.length === 0) return;
+                const currentState = getCurrentState();
+                undoStack.push(currentState);
+                localStorage.setItem('undoStack', JSON.stringify(undoStack));
+                const nextState = redoStack.pop();
+                localStorage.setItem('redoStack', JSON.stringify(redoStack));
+                restoreState(nextState);
+            });
+            document.addEventListener('keydown', function(e) {
+                const isCtrl = e.ctrlKey || e.metaKey;
+                if (!isCtrl) return;
+                if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('undoButton').click();
+                }
+                if ((e.key.toLowerCase() === 'y') || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+                    e.preventDefault();
+                    document.getElementById('redoButton').click();
+                }
+            });
+        </script>
+    </body>
 </html>
