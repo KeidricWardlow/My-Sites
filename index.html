@@ -1,145 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <head>
+        <meta charset="UTF-8">
+        <title>Intervals</title>
+        <style>
+            html {
+                min-height: 100vh;
+                background: linear-gradient(135deg, salmon, black, gold, cyan);
+            }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 16px;
+            }
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
+            .container {
+                display: flex;
+                flex-direction: row;
+                gap: 32px;
+                background: rgba(0, 0, 0, 0.1);
+                padding: 32px;
+                border-radius: 24px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                flex-wrap: wrap;
+                max-width: 100%;
+            }
 
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
+            .pad {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                max-width: 320px;
+            }
 
-    .read {
-      color: gray;
-    }
+            textarea,
+            .output {
+                width: 100%;
+                height: 400px;
+                resize: none;
+                border-radius: 10px;
+                border: 1px solid black;
+                font-size: 15px;
+                margin-bottom: 14px;
+                padding: 10px;
+                background-color: white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
 
-    .unread {
-      color: blue;
-    }
+            textarea:disabled,
+            .output {
+                background-color: indigo;
+                color: moccasin;
+                border-style: dashed;
+                user-select: text;
+            }
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
+            .output {
+                white-space: pre-wrap;
+                pointer-events: none;
+                overflow-y: auto;
+            }
 
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
+            label,
+            input[type="file"] {
+                font-size: 1em;
+                margin-bottom: 8px;
+            }
 
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+            button {
+                padding: 6px 18px;
+                border: none;
+                border-radius: 8px;
+                background: gold;
+                color: black;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.13);
+            }
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+            button:hover {
+                background: cyan;
+                color: black;
+            }
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+            .button-row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
 
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+            @media(max-width:768px) {
+                .container {
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 16px;
+                    gap: 24px;
+                }
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
-        }
-      });
-    });
-  </script>
-</body>
+                .pad {
+                    max-width: 100%;
+                }
+
+                textarea,
+                .output {
+                    height: 300px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="pad">
+                <input type="file" id="fileInput" accept=".txt">
+                <textarea id="inputPad" spellcheck="false" autocomplete="off" placeholder="Enter integers by newline..." autofocus></textarea>
+                <div class="button-row">
+                    <button id="undoBtn">Undo</button>
+                    <button id="redoBtn">Redo</button>
+                    <button id="clearBtn">Clear</button>
+                    <button id="exportBtn">Export CSV</button>
+                </div>
+            </div>
+            <div class="pad">
+                <div class="output" id="outputPad"></div>
+            </div>
+        </div>
+        <script>
+            const inputPad = document.getElementById('inputPad');
+            const outputPad = document.getElementById('outputPad');
+            const fileInput = document.getElementById('fileInput');
+            const clearBtn = document.getElementById('clearBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            const STORAGE_KEY = 'intervalNotepadData';
+            let history = [];
+            let redoStack = [];
+
+            function saveState() {
+                history.push(inputPad.value);
+                if (history.length > 200) history.shift();
+                redoStack = [];
+            }
+
+            function undo() {
+                if (history.length > 1) {
+                    redoStack.push(history.pop());
+                    inputPad.value = history[history.length - 1] || '';
+                    localStorage.setItem(STORAGE_KEY, inputPad.value);
+                    updateOutput();
+                }
+            }
+
+            function redo() {
+                if (redoStack.length > 0) {
+                    const next = redoStack.pop();
+                    history.push(next);
+                    inputPad.value = next;
+                    localStorage.setItem(STORAGE_KEY, inputPad.value);
+                    updateOutput();
+                }
+            }
+            inputPad.value = localStorage.getItem(STORAGE_KEY) || '';
+            history.push(inputPad.value);
+            inputPad.addEventListener('input', () => {
+                saveState();
+                localStorage.setItem(STORAGE_KEY, inputPad.value);
+                updateOutput();
+            });
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.txt')) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        inputPad.value = evt.target.result;
+                        saveState();
+                        localStorage.setItem(STORAGE_KEY, inputPad.value);
+                        updateOutput();
+                    };
+                    reader.readAsText(file);
+                }
+                fileInput.value = '';
+            });
+            clearBtn.addEventListener('click', () => {
+                inputPad.value = '';
+                saveState();
+                localStorage.removeItem(STORAGE_KEY);
+                updateOutput();
+            });
+            exportBtn.addEventListener('click', () => {
+                let inputLines = inputPad.value.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+                let outputLines = outputPad.textContent.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+                let csvRows = [`"Input","Output"`];
+                for (let i = 0; i < inputLines.length; i++) {
+                    let input = inputLines[i] || '';
+                    let output = '';
+                    if (i > 0) {
+                        output = outputLines[i - 1] || '';
+                    }
+                    csvRows.push(`"${input.replace(/"/g,'""')}","${output.replace(/"/g,'""')}"`);
+                }
+                let csvContent = csvRows.join('\n');
+                let blob = new Blob([csvContent], {
+                    type: 'text/csv;charset=utf-8;'
+                });
+                let now = new Date();
+                let yyyy = now.getFullYear();
+                let mm = String(now.getMonth() + 1).padStart(2, '0');
+                let dd = String(now.getDate()).padStart(2, '0');
+                let hh = String(now.getHours()).padStart(2, '0');
+                let min = String(now.getMinutes()).padStart(2, '0');
+                let ss = String(now.getSeconds()).padStart(2, '0');
+                let filename = `intervals-${yyyy}-${mm}-${dd}-${hh}-${min}-${ss}.csv`;
+                let url = URL.createObjectURL(blob);
+                let link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.click();
+            });
+
+            function updateOutput() {
+                let raw = inputPad.value;
+                let nums = raw.split(/[\n,]+/).map(s => s.trim()).filter(s => s.length > 0).map(Number).filter(x => !isNaN(x));
+                let outLines = [];
+                if (nums.length >= 2) {
+                    outLines.push('');
+                    for (let i = 1; i < nums.length; i++) {
+                        let prev = nums[i - 1],
+                            curr = nums[i];
+                        if (curr === 0 || prev === 0) {
+                            let diff = curr - prev;
+                            outLines.push(diff >= 0 ? `+${diff}` : `${diff}`);
+                        } else {
+                            let exp = Math.log(curr) / Math.log(prev);
+                            if (Number.isInteger(exp) && exp > 1) {
+                                outLines.push(`^${exp}`);
+                            } else {
+                                let expBack = Math.log(prev) / Math.log(curr);
+                                if (Number.isInteger(expBack) && expBack > 1) {
+                                    outLines.push(`^1/${expBack}`);
+                                } else if (curr % prev === 0) {
+                                    outLines.push(`*${curr/prev}`);
+                                } else if (prev % curr === 0) {
+                                    outLines.push(`/${prev/curr}`);
+                                } else {
+                                    let diff = curr - prev;
+                                    outLines.push(diff >= 0 ? `+${diff}` : `${diff}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                outputPad.textContent = outLines.join('\n');
+            }
+            updateOutput();
+        </script>
+    </body>
 </html>
