@@ -1,145 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-  <title>K's Tools</title>  
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">  
-  <style>
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, springgreen, white);
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-      overflow-y: auto;
-      padding: 40px 10px;
-    }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Area Chart</title>
+        <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Titillium Web', sans-serif;
+                background: linear-gradient(to right, tan, brown, yellow);
+                color: white;
+                text-align: center;
+                padding: 20px;
+            }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 auto;
-      width: 100%;
-      max-width: 100vh;
-      text-align: center;
-      z-index: 2;
-    }
+            .container {
+                max-width: 700px;
+                margin: auto;
+                width: 100%;
+                overflow-x: hidden;
+            }
 
-    li a {
-      display: block;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 10px;
-      border: 2px solid black;
-      border-radius: 8px;
-      margin: 6px 0;
-      background: white;
-      transition: 0.2s;
-    }
+            .point-input {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin: 8px 0;
+                align-items: center;
+            }
 
-    li a:hover {
-      background: black;
-      color: springgreen;
-    }
+            .point-input input[type="text"],
+            .point-input input[type="number"] {
+                width: 100%;
+                padding: 6px;
+                border-radius: 5px;
+                border: none;
+                box-sizing: border-box;
+            }
 
-    .read {
-      color: gray;
-    }
+            canvas {
+                margin-top: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            }
 
-    .unread {
-      color: blue;
-    }
+            button {
+                margin-top: 10px;
+                cursor: pointer;
+                background: darkblue;
+                color: white;
+                font-size: 16px;
+                font-family: "Titillium Web", Times, serif;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 6px;
+            }
 
-    .background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.08;
-      width: 90%;
-      height: 90%;
-      object-fit: contain;
-      z-index: 1;
-      pointer-events: none;
-    }
+            button:hover {
+                background: linear-gradient(to right, cyan, lime);
+                color: black;
+            }
 
-    .overlay-watermark {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      width: 120px;
-      opacity: 0.4;
-      z-index: 3;
-      pointer-events: none;
-    }
+            label {
+                margin-left: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div id="inputs-container"></div>
+            <button id="add-input">Add Point</button>
+            <button id="remove-input">Remove Point</button>
+            <button id="undo">Undo</button>
+            <button id="redo">Redo</button>
+            <button id="clear">Clear</button>
+            <br>
+            <br>
+            <input type="color" id="color-picker" value="#ffff00">
+            <input type="text" id="filename-input" placeholder="Enter filename...">
+            <button id="print">Print</button>
+            <canvas id="areaChart"></canvas>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const inputsContainer = document.getElementById('inputs-container');
+            const addInputButton = document.getElementById('add-input');
+            const removeInputButton = document.getElementById('remove-input');
+            const printButton = document.getElementById('print');
+            const areaChartCanvas = document.getElementById('areaChart');
+            const colorPicker = document.getElementById('color-picker');
+            const filenameInput = document.getElementById('filename-input');
+            const undoButton = document.getElementById('undo');
+            const redoButton = document.getElementById('redo');
+            let chartInstance;
+            const LS_POINTS_KEY = 'areaChart_points';
+            const LS_COLOR_KEY = 'areaChart_color';
+            const LS_FILENAME_KEY = 'areaChart_filename';
+            let history = [];
+            let historyIndex = -1;
+            const MAX_HISTORY = 50;
 
-    .watermark {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      font-size: 0.9rem;
-      color: rgba(0, 0, 0, 0.5);
-      z-index: 3;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <img src="totaledcomputer.jpg" class="background-image" alt="Background image">
+            function getStateSnapshot() {
+                return {
+                    points: getPointsData(),
+                    color: colorPicker.value,
+                    filename: filenameInput.value
+                };
+            }
 
-  <ul>
-    <li><a href="https://sprightly-cuchufli-48ff86.netlify.app/" target="_blank">Area Chart</a></li>
-    <li><a href="https://incomparable-palmier-f8dcf6.netlify.app/" target="_blank">Arithmetic Sequence</a></li>
-    <li><a href="https://silly-gumption-e995a2.netlify.app/" target="_blank">Arithmetics</a></li>
-    <li><a href="https://regal-marigold-6eacf4.netlify.app/" target="_blank">Array</a></li>
-    <li><a href="https://gleaming-peony-fe35bc.netlify.app/" target="_blank">Basic Calculator</a></li>
-    <li><a href="https://majestic-haupia-527a81.netlify.app/" target="_blank">Duplicate Text Finder</a></li>
-    <li><a href="https://inspiring-parfait-3c673d.netlify.app/" target="_blank">Factorization</a></li>
-    <li><a href="https://hilarious-dusk-179692.netlify.app/" target="_blank">Increment Calculator</a></li>
-    <li><a href="https://sunny-nasturtium-565bca.netlify.app/" target="_blank">Integer Calculator</a></li>
-    <li><a href="https://legendary-sunflower-890e77.netlify.app/" target="_blank">Integer Generator</a></li>    
-    <li><a href="https://lighthearted-toffee-3093dd.netlify.app/" target="_blank">Intervals</a></li>
-    <li><a href="https://frolicking-tiramisu-300f20.netlify.app/" target="_blank">Notepad</a></li>
-    <li><a href="https://celebrated-taiyaki-4fdf0f.netlify.app/" target="_blank">Operands</a></li>
-    <li><a href="https://stellular-mousse-285112.netlify.app/" target="_blank">Order Of Operations</a></li>
-    <li><a href="https://ubiquitous-banoffee-f15643.netlify.app/" target="_blank">Pie Chart</a></li>
-    <li><a href="https://adorable-lily-0d8e3f.netlify.app/" target="_blank">Recursion</a></li>
-    <li><a href="https://brilliant-florentine-b25edf.netlify.app/" target="_blank">Sequential Calculator</a></li>
-    <li><a href="https://aesthetic-yeot-6a250c.netlify.app/" target="_blank">Summation</a></li>
-    <li><a href="https://lucky-sunburst-3473e7.netlify.app/" target="_blank">String Generator</a></li>
-    <li><a href="https://stupendous-seahorse-c4ff2f.netlify.app/" target="_blank">Text Lookup</a></li>
-    <li><a href="https://graceful-cocada-9e5401.netlify.app/" target="_blank">Time Converter</a></li>
-    <li><a href="https://stirring-twilight-32a71d.netlify.app/" target="_blank">Word Dictation</a></li>
-    <li><a href="https://eclectic-cocada-4ed7c1.netlify.app/" target="_blank">Word Frequency</a></li>
-  </ul>
+            function applyStateSnapshot(state) {
+                if (!state) return;
+                inputsContainer.innerHTML = '';
+                state.points.forEach(pt => addPoint(pt.label, pt.value));
+                colorPicker.value = state.color;
+                filenameInput.value = state.filename;
+                drawChart();
+            }
 
-  <img src="totaledcomputer.jpg" class="overlay-watermark" alt="Watermark image">
-  <div class="watermark">© 2025 K’s Tools</div>
+            function pushHistory() {
+                const snapshot = JSON.stringify(getStateSnapshot());
+                if (history[historyIndex] === snapshot) return;
+                history = history.slice(0, historyIndex + 1);
+                history.push(snapshot);
+                if (history.length > MAX_HISTORY) history.shift();
+                historyIndex = history.length - 1;
+            }
 
-  <script>
-    const links = document.querySelectorAll("ul li a");
-    const readLinks = JSON.parse(localStorage.getItem("readLinks")) || [];
+            function undo() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    applyStateSnapshot(JSON.parse(history[historyIndex]));
+                }
+            }
 
-    links.forEach(link => {
-      const href = link.getAttribute("href");
-      if (readLinks.includes(href)) {
-        link.classList.add("read");
-      } else {
-        link.classList.add("unread");
-      }
-      link.addEventListener("click", () => {
-        if (!readLinks.includes(href)) {
-          readLinks.push(href);
-          localStorage.setItem("readLinks", JSON.stringify(readLinks));
-          link.classList.remove("unread");
-          link.classList.add("read");
-        }
-      });
-    });
-  </script>
-</body>
+            function redo() {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    applyStateSnapshot(JSON.parse(history[historyIndex]));
+                }
+            }
+
+            function getPointsData() {
+                return Array.from(inputsContainer.getElementsByClassName('point-input')).map(container => ({
+                    label: container.querySelector('.label-input').value,
+                    value: Number(container.querySelector('.value-input').value) || 0
+                }));
+            }
+
+            function savePointsToLocalStorage() {
+                const points = getPointsData();
+                localStorage.setItem(LS_POINTS_KEY, JSON.stringify(points));
+            }
+
+            function loadPointsFromLocalStorage() {
+                const points = JSON.parse(localStorage.getItem(LS_POINTS_KEY) || '[]');
+                inputsContainer.innerHTML = '';
+                if (points.length === 0) {
+                    addPoint("Point 1", "");
+                } else {
+                    points.forEach(pt => addPoint(pt.label, pt.value));
+                }
+            }
+
+            function addPoint(label = "", value = "") {
+                const div = document.createElement('div');
+                div.className = 'point-input';
+                div.innerHTML = `  
+
+										<input type="text" class="label-input" placeholder="Point ${inputsContainer.childElementCount + 1}" value="${label}">
+											<input type="number" class="value-input" min="0" value="${value}">  
+`;
+                inputsContainer.appendChild(div);
+                const labelInput = div.querySelector('.label-input');
+                const valueInput = div.querySelector('.value-input');
+                const triggerUpdate = () => {
+                    savePointsToLocalStorage();
+                    drawChart();
+                    pushHistory();
+                };
+                labelInput.addEventListener('input', triggerUpdate);
+                valueInput.addEventListener('input', triggerUpdate);
+            }
+
+            function drawChart() {
+                const points = getPointsData();
+                const selectedColor = colorPicker.value;
+                savePointsToLocalStorage();
+                saveOtherSettingsToLocalStorage();
+                if (chartInstance) chartInstance.destroy();
+                const ctx = areaChartCanvas.getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: points.map(p => p.label || "Unnamed"),
+                        datasets: [{
+                            label: 'Data Set',
+                            data: points.map(p => p.value),
+                            backgroundColor: `${selectedColor}50`,
+                            borderColor: selectedColor,
+                            borderWidth: 2,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            function saveOtherSettingsToLocalStorage() {
+                localStorage.setItem(LS_COLOR_KEY, colorPicker.value);
+                localStorage.setItem(LS_FILENAME_KEY, filenameInput.value);
+            }
+
+            function loadOtherSettingsFromLocalStorage() {
+                const color = localStorage.getItem(LS_COLOR_KEY);
+                const filename = localStorage.getItem(LS_FILENAME_KEY);
+                if (color) colorPicker.value = color;
+                if (filename) filenameInput.value = filename;
+            }
+            window.addEventListener('DOMContentLoaded', () => {
+                loadPointsFromLocalStorage();
+                loadOtherSettingsFromLocalStorage();
+                drawChart();
+                history = [];
+                pushHistory();
+            });
+            addInputButton.addEventListener('click', () => {
+                addPoint(`Point ${inputsContainer.childElementCount + 1}`, "");
+                savePointsToLocalStorage();
+                drawChart();
+                pushHistory();
+            });
+            removeInputButton.addEventListener('click', () => {
+                if (inputsContainer.lastChild) {
+                    inputsContainer.removeChild(inputsContainer.lastChild);
+                    savePointsToLocalStorage();
+                    drawChart();
+                    pushHistory();
+                }
+            });
+            undoButton.addEventListener('click', undo);
+            redoButton.addEventListener('click', redo);
+            printButton.addEventListener('click', () => {
+                const filename = filenameInput.value.trim() || 'chart';
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`  
+
+												<html>
+													<body>
+														<img src="${areaChartCanvas.toDataURL()}" style="width: 100%;"/>
+													</body>
+												</html>`);
+                printWindow.document.close();
+                printWindow.document.title = filename;
+                printWindow.print();
+                saveOtherSettingsToLocalStorage();
+            });
+            colorPicker.addEventListener('input', () => {
+                saveOtherSettingsToLocalStorage();
+                drawChart();
+                pushHistory();
+            });
+            filenameInput.addEventListener('input', () => {
+                saveOtherSettingsToLocalStorage();
+                pushHistory();
+            });
+            const clearButton = document.getElementById('clear');
+            clearButton.addEventListener('click', () => {
+                inputsContainer.innerHTML = '';
+                addPoint('Point 1', '');
+                savePointsToLocalStorage();
+                drawChart();
+                pushHistory();
+            });
+        </script>
+    </body>
 </html>
